@@ -23447,6 +23447,8 @@ var IBQR=(function(){
   return{make:make,draw:draw};
 })();
 
+// Read-only references to the native local path before authenticated source wrappers.
+window.IBMusicLocalPath=Object.freeze({load:_pwLoad,play:_pwPlayIdx,draw:_pwListDraw,addFiles:_pwAddFiles});
 
 (function(){
 'use strict';
