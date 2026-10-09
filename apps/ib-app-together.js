@@ -19,16 +19,7 @@
     var player=document.getElementById('music-app');if(!player)return;
     // Presentation only: keep the native audio, lyrics, pairing and controls untouched.
     if(player.classList.contains('tg-listen'))return;
-    var title=player.querySelector('.ma-title'),oldTitle=title.textContent;
-    player.classList.add('tg-listen');title.textContent='Listen Together';
-    var observer=new MutationObserver(sync);
-    function sync(){
-      if(!player.classList.contains('open')){
-        observer.disconnect();player.classList.remove('tg-listen');title.textContent=oldTitle;return;
-      }
-    }
-    observer.observe(player,{attributes:true,attributeFilter:['class']});
-    sync();
+    player.classList.add('tg-listen');
   }
   var icon='<circle cx="9" cy="8.4" r="3.5"/><path d="M3.6 19.6a5.4 5.4 0 0 1 10.8 0"/><path d="M15.4 5.7a3.5 3.5 0 0 1 0 5.4"/><path d="M16.6 14.4a5.4 5.4 0 0 1 3.6 5.2"/>';
   var activities=[

@@ -1,4 +1,45 @@
 /* Scoped Music menus and opt-in Listen Together presentation. */
+#music-app.tg-listen{bottom:var(--tg-keyboard,0px)}
+#music-app.tg-listen .tg-room-stage{position:relative;z-index:1;flex:1;min-height:0;width:100%;max-width:640px;align-self:center}
+#music-app.tg-listen .tg-room-stage>.ma-body{position:absolute;inset:0;height:100%;max-width:none}
+#music-app.tg-listen .tg-room-identity{position:relative;z-index:1;flex:none;align-self:center;border:0;background:transparent;color:var(--tx);font:inherit;text-align:center;padding:4px 20px 12px;max-width:100%;cursor:pointer}
+#music-app.tg-listen .tg-room-identity strong{display:block;font-size:.82rem;font-weight:500;line-height:1.7;overflow-wrap:anywhere}
+#music-app.tg-listen .tg-room-identity small{display:block;font-size:.68rem;line-height:1.6;color:var(--tx2)}
+#music-app.tg-listen .tg-pair-placeholder{display:flex;justify-content:center;margin:0 0 8px;opacity:.65}
+#music-app.tg-listen .tg-pair-placeholder[hidden]{display:none}
+#music-app.tg-listen .ma-duo{margin:4px 20px 0}
+#music-app.tg-listen .ma-duo-cap{display:none}
+#music-app.tg-listen .ma-art .ma-vinyl{inset:0;background:var(--soft);border-radius:10px;box-shadow:none;animation:none;transform:none}
+#music-app.tg-listen .ma-art .ma-vinyl:before,#music-app.tg-listen .ma-art .ma-vinyl:after{display:none}
+#music-app.tg-listen .ma-art .ma-vlabel{inset:0;width:100%;height:100%;border-radius:10px;box-shadow:none}
+#music-app.tg-listen .tg-room-chat{position:absolute;inset:0;display:flex;flex-direction:column;min-width:0;padding:0 20px;box-sizing:border-box;color:var(--tx);visibility:hidden;pointer-events:none}
+#music-app.tg-listen[data-tg-view=chat] .tg-room-chat{visibility:visible;pointer-events:auto}
+#music-app.tg-listen[data-tg-view=chat] .ma-body{visibility:hidden;pointer-events:none}
+#music-app.tg-listen[data-tg-view=chat] .ma-foot{display:none}
+#music-app.tg-listen .tg-now-playing{display:flex;align-items:center;gap:10px;padding:12px 0 16px;border-bottom:1px solid var(--glass-line);flex:none;min-width:0}
+#music-app.tg-listen .tg-now-cover{width:38px;height:38px;flex:none;border-radius:9px;background:var(--soft) center/cover no-repeat}
+#music-app.tg-listen .tg-now-playing>div:nth-child(2){flex:1;min-width:0}
+#music-app.tg-listen .tg-now-playing b{display:block;font-size:.84rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#music-app.tg-listen .tg-now-playing small{display:block;font-size:.68rem;color:var(--tx2);margin-top:3px}
+#music-app.tg-listen .tg-now-playing>span{font-size:.63rem;color:var(--tx2);flex:none}
+#music-app.tg-listen .tg-message-list{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:18px 0;scrollbar-width:thin}
+#music-app.tg-listen .tg-chat-empty{height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;box-sizing:border-box;padding:24px;color:var(--tx2)}
+#music-app.tg-listen .tg-chat-empty b{font:500 .95rem/1.7 var(--sys);color:var(--tx)}
+#music-app.tg-listen .tg-chat-empty p{font:.75rem/1.8 var(--sys);margin:8px 0}
+#music-app.tg-listen .tg-message{display:flex;flex-direction:column;align-items:flex-start;margin-bottom:18px;min-width:0}
+#music-app.tg-listen .tg-message.from-me{align-items:flex-end}
+#music-app.tg-listen .tg-message>small{color:var(--tx2);font-size:.65rem;margin:0 8px 5px}
+#music-app.tg-listen .tg-message-bubble{max-width:86%;box-sizing:border-box;padding:10px 14px;border-radius:16px 16px 16px 5px;border:1px solid var(--glass-line);background:var(--glass);font:14px/1.8 var(--sys);white-space:pre-wrap;overflow-wrap:anywhere;min-width:0}
+#music-app.tg-listen .from-me .tg-message-bubble{border-radius:16px 16px 5px 16px;background:var(--soft)}
+#music-app.tg-listen .tg-message-bubble.is-pending,#music-app.tg-listen .tg-message-bubble.is-error{color:var(--tx2)}
+#music-app.tg-listen .tg-chat-composer{display:flex;align-items:flex-end;gap:10px;flex:none;padding:8px 0 4px}
+#music-app.tg-listen .tg-chat-composer textarea{flex:1;min-width:0;box-sizing:border-box;resize:none;max-height:96px;min-height:42px;border:1px solid var(--glass-line);border-radius:20px;background:var(--glass);padding:10px 14px;color:var(--tx);font:14px/1.5 var(--sys);-webkit-appearance:none}
+#music-app.tg-listen .tg-chat-composer button{border:1px solid var(--glass-line);border-radius:50%;width:44px;height:44px;flex:none;background:var(--soft);color:var(--tx);font:inherit;font-size:.75rem;cursor:pointer}
+#music-app.tg-listen .tg-room-modes{position:relative;z-index:1;display:flex;flex:none;align-self:center;margin:8px 0 calc(12px + var(--sab));padding:3px;border:1px solid var(--glass-line);border-radius:999px;background:var(--glass);gap:3px}
+#music-app.tg-listen .tg-room-modes button{border:0;border-radius:999px;background:transparent;color:var(--tx2);font:.74rem/1.5 var(--sys);padding:7px 24px;min-height:34px;cursor:pointer}
+#music-app.tg-listen .tg-room-modes button[aria-pressed=true]{background:var(--soft);color:var(--tx)}
+@media(max-width:350px){#music-app.tg-listen .tg-room-chat{padding:0 14px}}
+@media(max-height:600px){#music-app.tg-listen .tg-room-identity{padding-bottom:4px}#music-app.tg-listen .ma-duo2 .ma-ava{width:32px;height:32px}}
 #music-app.tg-listen .ma-head{background:transparent;border-color:transparent;backdrop-filter:none;-webkit-backdrop-filter:none}
 #music-app.tg-listen .ma-mini{display:none}
 #music-app .tg-music-more{font-size:24px;letter-spacing:2px}
@@ -6,21 +47,6 @@
 #music-app .tg-music-menu nav{position:absolute;top:calc(64px + var(--sat));right:14px;min-width:180px;max-width:calc(100% - 28px);padding:6px;border-radius:16px;border:1px solid var(--glass-line);background:var(--sheet);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
 #music-app .tg-music-menu button{display:block;width:100%;padding:13px 14px;text-align:left;border:0;border-radius:10px;background:transparent;color:var(--tx);font:.82rem/1.5 var(--sys);cursor:pointer}
 #music-app .tg-music-menu button:focus-visible{outline:1px solid var(--tx2)}
-#music-app .tg-listen-chat{position:absolute;inset:0;z-index:10;display:flex;flex-direction:column;background:var(--sheet);color:var(--tx);padding:calc(12px + var(--sat)) 14px calc(12px + var(--sab));box-sizing:border-box}
-#music-app .tg-listen-chat>header{display:flex;align-items:center;gap:12px;flex:none}
-#music-app .tg-listen-chat h2{font:500 1.1rem/1.5 var(--serif);margin:0}
-#music-app .tg-chat-body{flex:1;min-height:0;overflow:auto;padding-top:24px;font:.85rem/1.8 var(--sys);overflow-wrap:anywhere}
-#music-app .tg-listen-chat .tg-ai-preview{position:relative;z-index:1;flex:none;align-self:center;box-sizing:border-box;width:calc(100% - 28px);max-width:612px;margin:8px 14px 0;padding:10px 12px;border:1px solid var(--glass-line);border-radius:16px;background:var(--glass);color:var(--tx);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);min-width:0}
-#music-app .tg-listen-chat .tg-ai-preview header,#music-app .tg-listen-chat .tg-ai-tools{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
-#music-app .tg-listen-chat .tg-ai-preview strong{font-size:.82rem;font-weight:500}
-#music-app .tg-listen-chat .tg-ai-preview small,#music-app .tg-listen-chat .tg-ai-preview summary{font-size:.65rem;line-height:1.6;color:var(--tx2)}
-#music-app .tg-listen-chat .tg-ai-tools{margin:6px 0;font-size:.7rem}
-#music-app .tg-listen-chat .tg-ai-tools select,#music-app .tg-listen-chat .tg-ai-tools button{max-width:100%;font:inherit;color:var(--tx);background:var(--soft);border:1px solid var(--glass-line);border-radius:9px;padding:5px 7px;min-height:32px}
-#music-app .tg-listen-chat .tg-ai-response{font:14px/1.75 var(--sys);white-space:pre-wrap;overflow-wrap:anywhere;max-height:88px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
-#music-app .tg-listen-chat .tg-ai-preview[data-state=loading] .tg-ai-response{color:var(--tx2)}
-#music-app .tg-listen-chat .tg-ai-preview[data-state=error] .tg-ai-response{border-left:2px solid var(--tx2);padding-left:8px}
-#music-app .tg-listen-chat .tg-ai-preview pre{font:11px/1.5 var(--sys);white-space:pre-wrap;overflow-wrap:anywhere;max-height:72px;overflow:auto;margin:4px 0}
-body.ib-reduce #music-app .tg-listen-chat .tg-ai-preview{backdrop-filter:none;-webkit-backdrop-filter:none}
 #music-app.tg-music-ui .tg-public-search{position:absolute;z-index:5;inset:calc(70px + var(--sat)) 10px calc(12px + var(--sab));max-width:620px;margin:0 auto;display:flex;flex-direction:column;min-height:0;padding:16px;box-sizing:border-box;border-radius:22px;border:1px solid var(--glass-line);background:var(--sheet);color:var(--tx);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
 #music-app.tg-music-ui .tg-public-search header{display:flex;align-items:center;justify-content:space-between;gap:8px}
 #music-app.tg-music-ui .tg-public-search form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:16px}
@@ -34,8 +60,7 @@ body.ib-reduce #music-app .tg-listen-chat .tg-ai-preview{backdrop-filter:none;-w
 body.ib-reduce #music-app.tg-music-ui .tg-public-search{backdrop-filter:none;-webkit-backdrop-filter:none}
 #music-app.tg-listen .ma-head{max-width:640px;width:calc(100% - 20px);box-sizing:border-box;align-self:center}
 #music-app.tg-listen .ma-title{font-family:var(--serif);font-size:clamp(.8rem,3.6vw,1.05rem);letter-spacing:.08em;text-transform:none;min-width:0}
-#music-app.tg-listen .tg-listen-note{position:relative;z-index:1;flex:none;align-self:center;max-width:600px;margin:12px 20px 4px;color:var(--tx3);font-size:.74rem;line-height:1.7;text-align:center}
-#music-app.tg-listen .ma-duo{margin:18px 20px 0}
+#music-app.tg-listen .ma-duo{margin:4px 20px 0}
 #music-app.tg-listen .ma-duo2{flex-direction:row;justify-content:center;gap:16px;max-width:600px;min-width:0}
 #music-app.tg-listen .ma-duo2 .pair{flex:none}
 #music-app.tg-listen .ma-duo2 .ma-ava{width:44px;height:44px}
@@ -44,6 +69,7 @@ body.ib-reduce #music-app.tg-music-ui .tg-public-search{backdrop-filter:none;-we
 #music-app.tg-listen .ma-body{display:grid;grid-template-columns:56px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:16px 14px;width:100%;max-width:640px;box-sizing:border-box;align-self:center;align-items:center;padding:14px 20px 0}
 #music-app.tg-listen .ma-art{grid-column:1;grid-row:1;width:56px;height:56px;margin:0}
 #music-app.tg-listen .ma-arm{display:none}
+#music-app.tg-listen .ma-info{margin:0;text-align:left;max-width:100%;min-width:0}
 #music-app.tg-listen .ma-inforow{grid-column:2;grid-row:1;margin:0;gap:8px;min-width:0;max-width:none}
 #music-app.tg-listen .ma-inforow .ma-t{font-size:1rem;text-shadow:none}
 #music-app.tg-listen .ma-inforow .ma-s{font-size:.7rem;text-shadow:none}
@@ -52,7 +78,7 @@ body.ib-reduce #music-app.tg-music-ui .tg-public-search{backdrop-filter:none;-we
 #music-app.tg-listen .ma-ln{padding:14px 4px;font-family:var(--serif);font-size:clamp(1.05rem,4.8vw,1.45rem);line-height:1.75;overflow-wrap:anywhere;color:var(--tx2);opacity:.78;transform:none;transition:color .25s,opacity .25s}
 #music-app.tg-listen .ma-ln.on{font-size:clamp(1.35rem,6.2vw,1.9rem);font-weight:600;opacity:1;transform:none;color:var(--tx)}
 #music-app.tg-listen .ma-lyr-empty{padding:24px 4px;font-size:.84rem;line-height:1.9}
-#music-app.tg-listen .ma-foot{width:100%;max-width:640px;box-sizing:border-box;align-self:center;margin-top:8px;border-top:1px solid var(--glass-line);border-radius:0;background:transparent;padding:14px 20px calc(16px + var(--sab));backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
+#music-app.tg-listen .ma-foot{width:100%;max-width:640px;box-sizing:border-box;align-self:center;margin-top:8px;border-top:1px solid var(--glass-line);border-radius:0;background:transparent;padding:10px 20px 8px;backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
 #music-app.tg-listen .ma-cvbg{filter:blur(56px) saturate(.75)}
 #music-app.tg-listen.has-cover .ma-cvbg{opacity:.18}
 body.theme-infernal #music-app.tg-listen.has-cover .ma-cvbg{opacity:.12}
@@ -62,13 +88,12 @@ body.ib-reduce #music-app.tg-listen .ma-cvbg{filter:none}
 @media(max-width:350px){
   #music-app.tg-listen .ma-body{grid-template-columns:44px minmax(0,1fr);gap:12px 10px;padding-left:14px;padding-right:14px}
   #music-app.tg-listen .ma-art{width:44px;height:44px}
-  #music-app.tg-listen .ma-inforow{gap:5px}
+#music-app.tg-listen .ma-inforow{gap:5px}
   #music-app.tg-listen .ma-mini{width:30px;height:30px}
   #music-app.tg-listen .ma-foot{padding-left:14px;padding-right:14px}
 }
 @media(max-height:600px){
   #music-app.tg-listen .ma-duo{margin-top:8px}
-  #music-app.tg-listen .tg-listen-note{margin-top:4px}
   #music-app.tg-listen .ma-body{padding-top:6px;row-gap:8px}
   #music-app.tg-listen .ma-lyr{padding-top:24px;padding-bottom:24px}
 }
