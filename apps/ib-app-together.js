@@ -12,31 +12,23 @@
     return listenStyle;
   }
   async function openListenTogether(){
-    var search=await import('./ib-together-public-search.js');
-    var mock=new URLSearchParams(location.search).get('ib-ai-mock')==='1'
-      ?await import('./ib-together-ai-preview.js'):null;
+    var musicUi=await import('./ib-together-music-ui.js');
+    musicUi.installMusicUi();
     await loadListenStyle();
     await window.openMusicApp();
     var player=document.getElementById('music-app');if(!player)return;
     // Presentation only: keep the native audio, lyrics, pairing and controls untouched.
     if(player.classList.contains('tg-listen'))return;
     var title=player.querySelector('.ma-title'),oldTitle=title.textContent;
-    var note=document.createElement('p');note.className='tg-listen-note';note.setAttribute('role','status');
-    player.insertBefore(note,player.querySelector('.ma-body'));
     player.classList.add('tg-listen');title.textContent='Listen Together';
-    var disposeSearch=search.mountPublicSearch(player);
-    var disposeMock=mock?mock.mountAiPreview(player):function(){};
     var observer=new MutationObserver(sync);
     function sync(){
       if(!player.classList.contains('open')){
-        observer.disconnect();disposeMock();disposeSearch();player.classList.remove('tg-listen');note.remove();title.textContent=oldTitle;return;
+        observer.disconnect();player.classList.remove('tg-listen');title.textContent=oldTitle;return;
       }
-      var paired=!!player.querySelector('#ma-duo .ma-duo2');
-      var text=paired?'一起，把此刻留给旋律。':'点歌名旁的爱心，选择一起听的人。';
-      if(note.textContent!==text)note.textContent=text;
     }
     observer.observe(player,{attributes:true,attributeFilter:['class']});
-    observer.observe(document.getElementById('ma-duo'),{childList:true});sync();
+    sync();
   }
   var icon='<circle cx="9" cy="8.4" r="3.5"/><path d="M3.6 19.6a5.4 5.4 0 0 1 10.8 0"/><path d="M15.4 5.7a3.5 3.5 0 0 1 0 5.4"/><path d="M16.6 14.4a5.4 5.4 0 0 1 3.6 5.2"/>';
   var activities=[
@@ -76,4 +68,5 @@
       host.appendChild(room);
     }
   });
+  import('./ib-together-music-ui.js').then(function(ui){return loadListenStyle().then(function(){ui.installMusicUi()})}).catch(function(e){console.warn('[Together] music presentation unavailable',e)});
 })();

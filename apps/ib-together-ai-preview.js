@@ -11,7 +11,7 @@ function readContext(player){
     connected:!!player.querySelector('#ma-duo .ma-duo2'),connectionKind:'native-companion-selected'
   };
 }
-export function mountAiPreview(player){
+export function mountAiPreview(player,host){
   const adapter=createAiAdapter(mockProvider);
   const card=document.createElement('section');card.className='tg-ai-preview';card.setAttribute('aria-label','晏景回应格式预演');
   card.innerHTML='<header><strong>晏景的话</strong><small>MOCK · 无 AI 请求</small></header>'
@@ -20,8 +20,7 @@ export function mountAiPreview(player){
     +'<small class="tg-ai-meta"></small><details><summary>播放上下文快照（只读）</summary><pre></pre></details>';
   const select=card.querySelector('select'),response=card.querySelector('.tg-ai-response'),meta=card.querySelector('.tg-ai-meta');
   for(const [value,label] of MOCK_CASES){const option=document.createElement('option');option.value=value;option.textContent=label;select.appendChild(option)}
-  const footer=player.querySelector('.ma-foot');
-  if(footer)footer.insertAdjacentElement('beforebegin',card);else player.appendChild(card);
+  host.appendChild(card);
   let controller=null,disposed=false;
   async function preview(){
     controller?.abort();controller=new AbortController();const signal=controller.signal;
