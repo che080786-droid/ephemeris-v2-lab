@@ -26658,5 +26658,13 @@ try{if(document.readyState==='loading')document.addEventListener('DOMContentLoad
 window._ibChatImp={open:open,read:read,parseText:parseText,run:run,undo:undo,hist:hist};
 })();
 </script>
+<!-- Temporary layout diagnostic: opt in with ?ib-layout-debug=1; no default load. -->
+<script>
+if(new URLSearchParams(location.search).get('ib-layout-debug')==='1'){
+  var _ibLayoutProbe=document.createElement('script');
+  _ibLayoutProbe.src='apps/ib-layout-diagnostic.js';
+  document.body.appendChild(_ibLayoutProbe);
+}
+</script>
 </body>
 </html>
