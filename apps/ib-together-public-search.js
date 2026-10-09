@@ -3,7 +3,10 @@ import {onlineMusicSearch,verifyTrack,tryLoadLyrics,syncLyrics} from './ib-toget
 const authenticatedMode=()=>!!((typeof window._ncmOn==='function'&&window._ncmOn())||(typeof window._qqmOn==='function'&&window._qqmOn()));
 export function mountPublicSearch(player){
   const launch=document.createElement('button');launch.type='button';launch.className='ov2-btn tg-public-launch';launch.textContent='搜索歌曲';
-  player.insertBefore(launch,player.querySelector('.ma-body'));
+  // Anchor to the visible header's actual parent, not the body section's nesting.
+  const header=player.querySelector('.ma-head');
+  if(header)header.insertAdjacentElement('afterend',launch);
+  else player.prepend(launch);
   let panel=null,controller=null,disposed=false;
   function close(){controller?.abort();controller=null;panel?.remove();panel=null;if(!disposed)launch.focus()}
   function dispose(){disposed=true;close();launch.remove()}

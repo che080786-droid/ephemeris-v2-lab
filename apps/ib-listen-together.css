@@ -1,5 +1,5 @@
 /* Opt-in presentation of the existing Music panel; every rule requires tg-listen. */
-#music-app.tg-listen .tg-public-launch{position:relative;z-index:2;align-self:center;flex:none;margin:4px 0;font-size:.72rem}
+#music-app.tg-listen .tg-public-launch{position:relative;z-index:3;display:inline-flex;align-items:center;justify-content:center;align-self:center;flex:none;min-height:36px;box-sizing:border-box;margin:10px 20px 2px;padding:8px 16px;border:1px solid var(--glass-line);border-radius:999px;background:var(--glass);color:var(--tx);font:.76rem/1.4 var(--sys);cursor:pointer}
 #music-app.tg-listen .tg-public-search{position:absolute;z-index:5;inset:calc(70px + var(--sat)) 10px calc(12px + var(--sab));max-width:620px;margin:0 auto;display:flex;flex-direction:column;min-height:0;padding:16px;box-sizing:border-box;border-radius:22px;border:1px solid var(--glass-line);background:var(--sheet);color:var(--tx);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
 #music-app.tg-listen .tg-public-search header{display:flex;align-items:center;justify-content:space-between;gap:8px}
 #music-app.tg-listen .tg-public-search form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:16px}
