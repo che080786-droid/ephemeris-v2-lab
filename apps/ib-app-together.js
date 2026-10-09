@@ -12,6 +12,7 @@
     return listenStyle;
   }
   async function openListenTogether(){
+    var search=await import('./ib-together-public-search.js');
     await loadListenStyle();
     await window.openMusicApp();
     var player=document.getElementById('music-app');if(!player)return;
@@ -21,10 +22,11 @@
     var note=document.createElement('p');note.className='tg-listen-note';note.setAttribute('role','status');
     player.insertBefore(note,player.querySelector('.ma-body'));
     player.classList.add('tg-listen');title.textContent='Listen Together';
+    var disposeSearch=search.mountPublicSearch(player);
     var observer=new MutationObserver(sync);
     function sync(){
       if(!player.classList.contains('open')){
-        observer.disconnect();player.classList.remove('tg-listen');note.remove();title.textContent=oldTitle;return;
+        observer.disconnect();disposeSearch();player.classList.remove('tg-listen');note.remove();title.textContent=oldTitle;return;
       }
       var paired=!!player.querySelector('#ma-duo .ma-duo2');
       var text=paired?'一起，把此刻留给旋律。':'点歌名旁的爱心，选择一起听的人。';

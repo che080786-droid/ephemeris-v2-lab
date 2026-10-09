@@ -1,4 +1,16 @@
 /* Opt-in presentation of the existing Music panel; every rule requires tg-listen. */
+#music-app.tg-listen .tg-public-launch{position:relative;z-index:2;align-self:center;flex:none;margin:4px 0;font-size:.72rem}
+#music-app.tg-listen .tg-public-search{position:absolute;z-index:5;inset:calc(70px + var(--sat)) 10px calc(12px + var(--sab));max-width:620px;margin:0 auto;display:flex;flex-direction:column;min-height:0;padding:16px;box-sizing:border-box;border-radius:22px;border:1px solid var(--glass-line);background:var(--sheet);color:var(--tx);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
+#music-app.tg-listen .tg-public-search header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#music-app.tg-listen .tg-public-search form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:16px}
+#music-app.tg-listen .tg-public-search input{grid-column:1 / -1;min-width:0;width:100%;box-sizing:border-box;padding:12px;border-radius:12px;border:1px solid var(--glass-line);font:inherit;background:var(--soft);color:var(--tx)}
+#music-app.tg-listen .tg-public-search select{min-width:0;padding:8px;border-radius:12px;border:1px solid var(--glass-line);background:var(--soft);color:var(--tx);font:inherit}
+#music-app.tg-listen .tg-public-search p{font-size:.76rem;line-height:1.7;color:var(--tx2)}
+#music-app.tg-listen .tg-public-results{flex:1;min-height:0;overflow-y:auto}
+#music-app.tg-listen .tg-public-result{display:block;width:100%;box-sizing:border-box;text-align:left;margin:0 0 10px;padding:14px;cursor:pointer;color:var(--tx);font:inherit;overflow-wrap:anywhere}
+#music-app.tg-listen .tg-public-result small{display:block;margin-top:6px;font-size:.74rem;color:var(--tx2)}
+#music-app.tg-listen .tg-public-result:disabled{opacity:.65;cursor:wait}
+body.ib-reduce #music-app.tg-listen .tg-public-search{backdrop-filter:none;-webkit-backdrop-filter:none}
 #music-app.tg-listen .ma-head{max-width:640px;width:calc(100% - 20px);box-sizing:border-box;align-self:center}
 #music-app.tg-listen .ma-title{font-family:var(--serif);font-size:clamp(.8rem,3.6vw,1.05rem);letter-spacing:.08em;text-transform:none;min-width:0}
 #music-app.tg-listen .tg-listen-note{position:relative;z-index:1;flex:none;align-self:center;max-width:600px;margin:12px 20px 4px;color:var(--tx3);font-size:.74rem;line-height:1.7;text-align:center}
