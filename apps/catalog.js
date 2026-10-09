@@ -3,6 +3,15 @@ window.IB_APP_CATALOG={
   "sdk": 2,
   "apps": [
     {
+      "id": "together",
+      "name": "Together / 一起",
+      "version": "1.0.0",
+      "file": "ib-app-together.js",
+      "desc": "留一点时间，一起听歌、读书、看一段故事。",
+      "icon": "<circle cx=\"9\" cy=\"8.4\" r=\"3.5\"/><path d=\"M3.6 19.6a5.4 5.4 0 0 1 10.8 0\"/><path d=\"M15.4 5.7a3.5 3.5 0 0 1 0 5.4\"/><path d=\"M16.6 14.4a5.4 5.4 0 0 1 3.6 5.2\"/>",
+      "builtin": true
+    },
+    {
       "id": "coread",
       "name": "共读间",
       "version": "2.7.0",
