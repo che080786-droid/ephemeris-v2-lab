@@ -2,12 +2,20 @@
 #music-app.tg-listen{bottom:var(--tg-keyboard,0px)}
 #music-app.tg-listen .tg-room-stage{position:relative;z-index:1;flex:1;min-height:0;width:100%;max-width:640px;align-self:center}
 #music-app.tg-listen .tg-room-stage>.ma-body{position:absolute;inset:0;height:100%;max-width:none}
-#music-app.tg-listen .tg-room-identity{position:relative;z-index:1;flex:none;align-self:center;border:0;background:transparent;color:var(--tx);font:inherit;text-align:center;padding:4px 20px 12px;max-width:100%;cursor:pointer}
-#music-app.tg-listen .tg-room-identity strong{display:block;font-size:.82rem;font-weight:500;line-height:1.7;overflow-wrap:anywhere}
-#music-app.tg-listen .tg-room-identity small{display:block;font-size:.68rem;line-height:1.6;color:var(--tx2)}
-#music-app.tg-listen .tg-pair-placeholder{display:flex;justify-content:center;margin:0 0 8px;opacity:.65}
-#music-app.tg-listen .tg-pair-placeholder[hidden]{display:none}
-#music-app.tg-listen .ma-duo{margin:4px 20px 0}
+#music-app.tg-listen .tg-room-identity{position:relative;z-index:1;display:flex;align-items:center;gap:14px;flex:none;align-self:center;box-sizing:border-box;width:100%;max-width:640px;border:0;background:transparent;color:var(--tx);font:inherit;text-align:left;padding:8px 20px 10px;cursor:pointer}
+#music-app.tg-listen .tg-room-pair{position:relative;display:flex;align-items:center;flex:none}
+#music-app.tg-listen .tg-room-pair .ma-ava{width:48px;height:48px;box-sizing:border-box;border:1.5px solid var(--glass-line);background:var(--soft);box-shadow:0 2px 10px rgba(0,0,0,.08)}
+#music-app.tg-listen .tg-room-pair .ma-ava:last-child{margin-left:-8px}
+#music-app.tg-listen .tg-room-pair .ma-ava svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;opacity:.8}
+#music-app.tg-listen .tg-pair-link{position:absolute;z-index:1;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;width:17px;height:17px;border:1px solid var(--glass-line);border-radius:50%;background:var(--sheet);color:var(--tx2);font:12px/1 var(--sys)}
+#music-app.tg-listen .tg-pair-copy{display:block;min-width:0}
+#music-app.tg-listen .tg-room-identity strong{display:block;font:500 .68rem/1.6 var(--sys);letter-spacing:.12em;overflow-wrap:anywhere}
+#music-app.tg-listen .tg-pair-subtitle{display:block;margin-top:2px;font:.63rem/1.6 var(--sys);letter-spacing:.08em;color:var(--tx2)}
+#music-app.tg-listen .tg-room-identity small{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:.65rem;line-height:1.6;color:var(--tx2)}
+#music-app.tg-listen .tg-room-identity small:before{content:'';width:5px;height:5px;flex:none;border-radius:50%;background:var(--tx3);opacity:.55}
+#music-app.tg-listen .tg-room-identity.is-paired small:before{background:var(--acc);opacity:1}
+/* Keep native pairing nodes as the data source; present them in the compact header. */
+#music-app.tg-listen .ma-duo{display:none!important}
 #music-app.tg-listen .ma-duo-cap{display:none}
 #music-app.tg-listen .ma-art .ma-vinyl{inset:0;background:var(--soft);border-radius:10px;box-shadow:none;animation:none;transform:none}
 #music-app.tg-listen .ma-art .ma-vinyl:before,#music-app.tg-listen .ma-art .ma-vinyl:after{display:none}
@@ -39,7 +47,7 @@
 #music-app.tg-listen .tg-room-modes button{border:0;border-radius:999px;background:transparent;color:var(--tx2);font:.74rem/1.5 var(--sys);padding:7px 24px;min-height:34px;cursor:pointer}
 #music-app.tg-listen .tg-room-modes button[aria-pressed=true]{background:var(--soft);color:var(--tx)}
 @media(max-width:350px){#music-app.tg-listen .tg-room-chat{padding:0 14px}}
-@media(max-height:600px){#music-app.tg-listen .tg-room-identity{padding-bottom:4px}#music-app.tg-listen .ma-duo2 .ma-ava{width:32px;height:32px}}
+@media(max-height:600px){#music-app.tg-listen .tg-room-identity{padding-top:4px;padding-bottom:4px}}
 #music-app.tg-listen .ma-head{background:transparent;border-color:transparent;backdrop-filter:none;-webkit-backdrop-filter:none}
 #music-app.tg-listen .ma-mini{display:none}
 #music-app .tg-music-more{font-size:24px;letter-spacing:2px}
@@ -60,7 +68,6 @@
 body.ib-reduce #music-app.tg-music-ui .tg-public-search{backdrop-filter:none;-webkit-backdrop-filter:none}
 #music-app.tg-listen .ma-head{max-width:640px;width:calc(100% - 20px);box-sizing:border-box;align-self:center}
 #music-app.tg-listen .ma-title{font-family:var(--serif);font-size:clamp(.8rem,3.6vw,1.05rem);letter-spacing:.08em;text-transform:none;min-width:0}
-#music-app.tg-listen .ma-duo{margin:4px 20px 0}
 #music-app.tg-listen .ma-duo2{flex-direction:row;justify-content:center;gap:16px;max-width:600px;min-width:0}
 #music-app.tg-listen .ma-duo2 .pair{flex:none}
 #music-app.tg-listen .ma-duo2 .ma-ava{width:44px;height:44px}

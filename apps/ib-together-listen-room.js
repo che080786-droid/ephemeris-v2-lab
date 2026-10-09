@@ -11,7 +11,8 @@ export function mountListenRoom(player){
   const adapter=createAiAdapter(mockProvider),body=player.querySelector('.ma-body'),foot=player.querySelector('.ma-foot'),lyrics=player.querySelector('.ma-lyr');
   const title=player.querySelector('.ma-title'),oldTitle=title.textContent;title.textContent='Listen Together';
   const identity=document.createElement('button');identity.type='button';identity.className='tg-room-identity';identity.setAttribute('aria-label','共听伙伴与状态');
-  identity.innerHTML='<span class="tg-pair-placeholder" aria-hidden="true"><span class="ma-ava">明</span><span class="ma-ava">晏</span></span><strong></strong><small></small>';
+  const avatarPlaceholder='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 21a7 7 0 0 1 14 0"/></svg>';
+  identity.innerHTML='<span class="tg-room-pair" aria-hidden="true"><span class="ma-ava">'+avatarPlaceholder+'</span><i class="tg-pair-link">∞</i><span class="ma-ava">'+avatarPlaceholder+'</span></span><span class="tg-pair-copy"><strong>01 / LISTEN TOGETHER</strong><span class="tg-pair-subtitle"></span><small></small></span>';
   identity.addEventListener('click',()=>player.querySelector('#ma-mate').click());body.insertAdjacentElement('beforebegin',identity);
   const stage=document.createElement('div');stage.className='tg-room-stage';body.insertAdjacentElement('beforebegin',stage);stage.appendChild(body);
   const chat=document.createElement('section');chat.className='tg-room-chat';chat.setAttribute('aria-label','一起听对话');
@@ -23,8 +24,23 @@ export function mountListenRoom(player){
   const modes=document.createElement('div');modes.className='tg-room-modes';modes.setAttribute('role','group');modes.setAttribute('aria-label','一起听模式');
   modes.innerHTML='<button type="button" data-view="music">音乐</button><button type="button" data-view="chat">对话</button>';player.appendChild(modes);
   const nativeObserver=new MutationObserver(refreshContext);
-  for(const selector of ['#ma-duo','#ma-t','#ma-s','#ma-bg']){const element=player.querySelector(selector);if(element)nativeObserver.observe(element,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['style']})}
+  for(const selector of ['#ma-duo','#ma-t','#ma-s','#ma-bg']){const element=player.querySelector(selector);if(element)nativeObserver.observe(element,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['style','src']})}
+  nativeObserver.observe(document.body,{attributes:true,attributeFilter:['class']});
   function text(element,value){if(element.textContent!==value)element.textContent=value}
+  function paintPair(){
+    const nativeAvatars=player.querySelectorAll('#ma-duo .pair .ma-ava');
+    const cfg=(typeof _cfgs!=='undefined'?_cfgs:[])?.find(c=>c.id===key);
+    const profiles=[typeof _about!=='undefined'?_about:null,cfg];
+    identity.querySelectorAll('.ma-ava').forEach((slot,index)=>{
+      const profile=profiles[index];
+      const src=nativeAvatars[index]?.querySelector('img')?.getAttribute('src')
+        ||(profile?(typeof _pfAvatar==='function'?_pfAvatar(profile):profile.avatar)||'':'');
+      if((slot.dataset.avatar||'')===src)return;
+      slot.dataset.avatar=src;slot.replaceChildren();
+      if(src){const image=document.createElement('img');image.alt='';image.src=src;image.addEventListener('error',()=>{if(slot.firstChild===image)slot.innerHTML=avatarPlaceholder},{once:true});slot.appendChild(image)}
+      else slot.innerHTML=avatarPlaceholder;
+    });
+  }
   function names(){
     const cfg=(typeof _cfgs!=='undefined'?_cfgs:[])?.find(c=>c.id===key);
     return {me:'明月',mate:cfg?(typeof cfgName==='function'?cfgName(cfg):cfg.name)||'晏景':'晏景'};
@@ -33,10 +49,11 @@ export function mountListenRoom(player){
     if(disposed)return;
     const nextKey=roomKey();if(key!==nextKey){cancelPending();key=nextKey;state=session(key);input.value=state.draft;renderMessages();setMode(state.mode)}
     const paired=!!player.querySelector('#ma-duo .ma-duo2'),n=names();
-    identity.querySelector('.tg-pair-placeholder').hidden=paired;
-    text(identity.querySelector('strong'),n.me+' × '+n.mate);
+    paintPair();identity.classList.toggle('is-paired',paired);
+    identity.setAttribute('aria-label',n.me+' × '+n.mate+'，'+(paired?'共听伙伴与状态':'选择共听伙伴'));
+    text(identity.querySelector('.tg-pair-subtitle'),paired?'WITH YOU · SAME SONG':'WAITING FOR YOU');
     const ms=typeof _mp!=='undefined'?Number(_mp?.musicAi?.mateTime?.[key])||0:0;
-    text(identity.querySelector('small'),paired?(ms<60000?'一起听不到 1 分钟':'一起听了 '+Math.floor(ms/60000)+' 分钟'):'选择共听伙伴，留一点共同的时间');
+    text(identity.querySelector('small'),paired?'一起听 · '+(ms<60000?'不到 1 分钟':Math.floor(ms/60000)+' 分钟'):'等待共听');
     const track=currentTrack(),cover=chat.querySelector('.tg-now-cover'),art=track?.cover?String(track.cover):'';
     // Copy the native cover style; metadata URLs never become HTML.
     const bg=art?player.querySelector('#ma-bg')?.style.backgroundImage||'':'';
