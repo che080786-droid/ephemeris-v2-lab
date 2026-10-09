@@ -6139,11 +6139,46 @@ var IBApps=(function(){
     }catch(e){}
   }
   /* ── 商店（伪）：已安装 / 可安装两组；开关＝安装 / 卸载；卸载不删数据 ── */
+  async function _togetherToDesk(){
+    // Installation and Desk visibility are separate native states. Restore only on request.
+    await _setOn('together',true);
+    var key='app:x:together',d=_mp.desk||{};
+    var hidden=(Array.isArray(d.hidden)?d.hidden:[]).filter(function(k){return k!==key});
+    var pages=Object.assign({},d.pages||{}),order=Array.isArray(d.order)?d.order.slice():[];
+    var osw=$('dk-osw'),page=parseInt(pages[key],10);
+    if(!isFinite(page)||page<0)page=osw?_dkOsIdx(osw):0;
+    pages[key]=page;
+    if(_defs.together)_iconAdd(_defs.together);
+    // Let the original ordering supply defaults when no custom order has been saved.
+    if(!order.length)order=await deskApplyLayout();
+    if(order.indexOf(key)===-1)order.push(key);
+    await _dkSave(order,hidden,pages);
+    await deskApplyLayout();
+    osw=$('dk-osw');
+    var icon=_icons.together,pg=icon&&icon.closest('.desk-pg');
+    if(osw&&pg){
+      var actual=Array.prototype.indexOf.call(osw.children,pg);
+      if(actual>=0){
+        pages=Object.assign({},(_mp.desk||{}).pages||{});pages[key]=actual;
+        await _dkSave((_mp.desk||{}).order||order,(_mp.desk||{}).hidden||hidden,pages);
+        await deskApplyLayout();
+        _dkOsGoto(actual);
+      }
+    }
+  }
   function _row(a,inst){
     var def=_defs[a.id],miss=!!_missing[a.id];
     var row=document.createElement('div');row.className='ibap-row';
     row.innerHTML='<span class="ibap-ic"><svg viewBox="0 0 24 24">'+_iconOf((def&&def.icon)||a.icon)+'</svg></span><div class="ibap-m"><b>'+_e(a.name||a.id)+'</b><small>'+_e(a.desc||'')+(a.version?(a.desc?' · ':'')+'v'+_e(a.version):'')+(miss?' · <i>文件缺失：apps/'+_e(a.file)+'</i>':(inst&&!def?' · 加载中…':''))+'</small></div>';
     if(inst&&def){var ob=document.createElement('button');ob.type='button';ob.className='ov2-btn';ob.textContent='打开';ob.addEventListener('click',function(){closeStore();open(a.id)});row.appendChild(ob)}
+    if(inst&&def&&a.id==='together'){
+      var hidden=((_mp.desk||{}).hidden||[]).indexOf('app:x:together')!==-1;
+      if(hidden||!(_icons.together&&_icons.together.isConnected)){
+        var add=document.createElement('button');add.type='button';add.className='ov2-btn';add.textContent='添加到桌面';
+        add.addEventListener('click',async function(){add.disabled=true;try{await _togetherToDesk();_storeRefresh();toast('Together 已添加到桌面')}catch(e){add.disabled=false;toast('添加失败，请重试')}});
+        row.appendChild(add);
+      }
+    }
     if(a.builtin){var tg=document.createElement('span');tg.className='ibap-tag';tg.textContent='常驻';row.appendChild(tg)}/* 手机端：常驻 APP 只显标签，没有开关 */
     else{var sw=document.createElement('div');sw.className='sw2';sw2(sw,inst);
     sw.addEventListener('click',async function(){
@@ -6173,7 +6208,7 @@ var IBApps=(function(){
   function _storeRefresh(){try{if(_store&&_store.body)_storeBody(_store.body)}catch(e){}}
   function openStore(){try{if(_store)return;if(_open)close(_open.id);var p=_panel('应用','桌面 APP · 选择性安装，不装即静默',closeStore);_store={root:p.root,body:p.body};_storeBody(p.body)}catch(e){}}
   function closeStore(){try{if(_store){_store.root.remove();_store=null}}catch(e){}}
-  async function install(id){var a=_catOf(id);if(!a)return false;await _setOn(id,true);if(_defs[id])_iconAdd(_defs[id]);else _load(a);return true}
+  async function install(id){var a=_catOf(id);if(!a)return false;await _setOn(id,true);if(_defs[id])_iconAdd(_defs[id]);else _load(a);if(id==='together')await _togetherToDesk();return true}
   async function uninstall(id){if((_catOf(id)||{}).builtin)return false;/* 手机端：常驻 APP 不可卸载 */try{if(_defs[id])_defs[id]._off=true}catch(e){}await _setOn(id,false);if(_open&&_open.id===id)close(id);_iconDel(id);return true}
   /* ── 启动：读目录 → 装载已安装的 → 图标随 register 落桌面 ── */
   async function _boot(){
