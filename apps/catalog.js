@@ -4,7 +4,7 @@ window.IB_APP_CATALOG={
   "apps": [
     {
       "id": "together",
-      "name": "Together / 一起",
+      "name": "Together",
       "version": "1.0.0",
       "file": "ib-app-together.js",
       "desc": "留一点时间，一起听歌、读书、看一段故事。",
