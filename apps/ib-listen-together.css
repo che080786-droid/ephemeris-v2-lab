@@ -135,5 +135,19 @@ body.theme-infernal #music-app.tg-listen[data-tg-background=night] .tg-room-back
 #music-app .tg-collection-card .tg-background-file[hidden]{display:none}
 #music-app .tg-collection-card button:disabled{opacity:.55;cursor:wait}
 #music-app.tg-listen[data-tg-background=custom] .tg-room-background{inset:-4px;background-position:center;background-size:cover;background-repeat:no-repeat;filter:blur(3px) saturate(.8)}
-#music-app.tg-listen[data-tg-background=custom] .ma-scrim{background:rgba(239,244,251,.78)}
-body.theme-infernal #music-app.tg-listen[data-tg-background=custom] .ma-scrim{background:rgba(15,22,38,.8)}
+#music-app.tg-listen[data-tg-background=custom] .ma-scrim{background:rgba(239,244,251,.08)}
+body.theme-infernal #music-app.tg-listen[data-tg-background=custom] .ma-scrim{background:rgba(15,22,38,.12)}
+
+/* Opacity changes the photo itself; text gets local contrast without a heavy full-room veil. */
+#music-app .tg-background-opacity{display:grid;grid-template-columns:1fr auto;gap:8px;margin:18px 0;color:var(--tx);font:.82rem/1.6 var(--sys)}
+#music-app .tg-background-opacity input[type=range]{grid-column:1 / -1;padding:0;margin:0;height:32px;accent-color:var(--acc);cursor:pointer}
+#music-app.tg-listen[data-tg-background=custom] .ma-head,#music-app.tg-listen[data-tg-background=custom] .tg-room-identity,#music-app.tg-listen[data-tg-background=custom] .tg-now-playing{border-radius:16px;background:var(--glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+#music-app.tg-listen[data-tg-background=custom] .ma-lyr,#music-app.tg-listen[data-tg-background=custom] .ma-info{ text-shadow:0 1px 3px rgba(255,255,255,.95),0 0 6px rgba(255,255,255,.85)}
+body.theme-infernal #music-app.tg-listen[data-tg-background=custom] .ma-lyr,body.theme-infernal #music-app.tg-listen[data-tg-background=custom] .ma-info{text-shadow:0 1px 3px rgba(0,0,0,.95),0 0 6px rgba(0,0,0,.85)}
+#music-app.tg-listen[data-tg-background=custom] .tg-chat-empty{justify-content:center;text-shadow:0 1px 3px rgba(255,255,255,.95),0 0 6px rgba(255,255,255,.85)}
+body.theme-infernal #music-app.tg-listen[data-tg-background=custom] .tg-chat-empty{text-shadow:0 1px 3px rgba(0,0,0,.95),0 0 6px rgba(0,0,0,.85)}
+/* Native .playing is the only input: no audio listeners or playback mutations. */
+#music-app:not(.tg-listen) .ma-arm{transform:translateY(-3px) rotate(-58deg);transition:transform .4s ease-in-out}
+#music-app.playing:not(.tg-listen) .ma-arm{transform:translateY(0) rotate(-3deg)}
+body.ib-reduce #music-app:not(.tg-listen) .ma-arm{transition:none}
+@media(prefers-reduced-motion:reduce){#music-app:not(.tg-listen) .ma-arm{transition:none}}
