@@ -181,3 +181,9 @@ html body #music-app.tg-listen[data-tg-background=custom] .ma-lyr,html body #mus
 html body #music-app.tg-listen .ma-art .ma-vinyl{background:var(--tg-soft)!important}
 html body #music-app.tg-listen .ma-art .ma-vlabel svg{stroke:var(--tg-foreground)!important}
 html body #music-app.tg-listen:not(.has-cover) .ma-art .ma-vlabel{background:var(--tg-soft)!important;box-shadow:none}
+
+/* Safari can use root paint for its exposed top area; restore by removing the room attribute. */
+html[data-ib-together-chrome=light],html[data-ib-together-chrome=light] body{background-color:#efeeeb!important;color-scheme:light}
+html[data-ib-together-chrome=dark],html[data-ib-together-chrome=dark] body{background-color:#171717!important;color-scheme:dark}
+html[data-ib-together-chrome] #music-app.tg-listen::before{content:'';position:absolute;top:0;left:0;right:0;height:var(--sat,env(safe-area-inset-top,0px));z-index:1;pointer-events:none;background:#efeeeb}
+html[data-ib-together-chrome=dark] #music-app.tg-listen::before{background:#171717}

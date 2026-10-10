@@ -1,4 +1,5 @@
 /* Neutral room foregrounds only; no playback or application-wide theme changes. */
+import {mountTogetherBrowserChrome} from './ib-together-browser-chrome.js';
 const KEY='ib_listen_theme_v1',MODES=[['auto','自动'],['light','浅色'],['dark','深色']];
 const valid=value=>MODES.some(([mode])=>mode===value)?value:'auto';
 function readMode(){try{return valid(localStorage.getItem(KEY))}catch(e){return 'auto'}}
@@ -27,9 +28,10 @@ function imageBrightness(url){
 function imageUrl(element){const value=element?getComputedStyle(element).backgroundImage:'';return /^url\(["']?(.*?)["']?\)$/.exec(value)?.[1]||''}
 export function mountTogetherTheme(player,background){
   let disposed=false,sequence=0,signature='',mode=readMode(),pickerSync=null;
-  function apply(value){if(!disposed&&player.dataset.tgTheme!==value)player.dataset.tgTheme=value}
+  const chrome=mountTogetherBrowserChrome(player);
+  function apply(value){if(disposed)return;if(player.dataset.tgTheme!==value)player.dataset.tgTheme=value;chrome.sync()}
   async function refresh(){
-    if(disposed)return;
+    if(disposed)return;chrome.sync();
     const globalDark=document.body.classList.contains('theme-infernal'),base=globalDark?.09:.94;
     const kind=player.dataset.tgBackground||'default';
     const photo=kind==='custom'||kind==='cover'?background:kind==='default'?(player.classList.contains('has-cover')?player.querySelector('#ma-bg'):player.querySelector('.ma-wall')):null;
@@ -55,5 +57,5 @@ export function mountTogetherTheme(player,background){
       try{localStorage.setItem(KEY,next);mode=next;refresh()}catch(e){select.value=mode;window.toast?.('未能保存显示模式，请检查浏览器存储空间')}
     });
   }
-  return {refresh,picker,dispose(){disposed=true;++sequence;bodyObserver.disconnect();playerObserver.disconnect();window.removeEventListener('storage',storage);pickerSync=null;delete player.dataset.tgTheme}};
+  return {refresh,picker,dispose(){chrome.dispose();disposed=true;++sequence;bodyObserver.disconnect();playerObserver.disconnect();window.removeEventListener('storage',storage);pickerSync=null;delete player.dataset.tgTheme}};
 }
