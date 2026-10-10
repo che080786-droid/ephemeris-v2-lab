@@ -187,3 +187,15 @@ html[data-ib-together-chrome=light],html[data-ib-together-chrome=light] body{bac
 html[data-ib-together-chrome=dark],html[data-ib-together-chrome=dark] body{background-color:#171717!important;color-scheme:dark}
 html[data-ib-together-chrome] #music-app.tg-listen::before{content:'';position:absolute;top:0;left:0;right:0;height:var(--sat,env(safe-area-inset-top,0px));z-index:1;pointer-events:none;background:#efeeeb}
 html[data-ib-together-chrome=dark] #music-app.tg-listen::before{background:#171717}
+/* Lightweight participation cards reuse the existing room/chat flow and shared theme. */
+.ib-music-card{box-sizing:border-box;margin-top:10px;max-width:100%;padding:12px;border:1px solid var(--glass-line);border-radius:14px;background:var(--glass);color:var(--tx);font:14px/1.7 var(--sys);overflow-wrap:anywhere}
+.ib-music-card p{margin:5px 0;color:var(--tx2);font-size:12px;white-space:pre-wrap}
+.ib-music-card>div{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.ib-music-card button{border:1px solid var(--glass-line);border-radius:999px;padding:7px 12px;background:var(--soft);color:var(--tx);font:inherit;font-size:12px;cursor:pointer;min-height:36px}
+.ib-music-card small{display:block;color:var(--tx2);font-size:11px}
+.ib-music-card button:disabled{opacity:.5}
+#music-app .tg-song-heart{position:relative}
+#music-app .tg-song-heart[data-both=true]::after{content:'我们都喜欢';position:absolute;right:-12px;bottom:-10px;white-space:nowrap;font:9px/1.4 var(--sys);color:var(--tx2)}
+#music-app .tg-song-heart[data-both=false][data-yanjing=true]::after{content:'晏景喜欢';position:absolute;right:-8px;bottom:-10px;white-space:nowrap;font:9px/1.4 var(--sys);color:var(--tx2)}
+#conv .ib-music-mock-picker{position:absolute;z-index:12;top:calc(65px + var(--sat));left:12px;right:12px;background:var(--sheet);display:flex;gap:8px;align-items:center}
+#conv .ib-music-mock-picker select{min-width:0;flex:1;padding:8px;border:1px solid var(--glass-line);border-radius:10px;background:var(--soft);color:var(--tx);font:inherit}

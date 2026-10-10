@@ -1,3 +1,4 @@
+import {installMusicParticipationChat} from './ib-music-participation-chat.js';
 /* Shared Music presentation only: native audio, authentication and data providers stay intact. */
 import {mountPublicSearch} from './ib-together-public-search.js';
 import {currentPublicContext,restorePlaybackContext} from './ib-together-playback-context.js';
@@ -5,7 +6,7 @@ import {mountMusicCollection} from './ib-music-collection-ui.js';
 import {mountListenRoom} from './ib-together-listen-room.js';
 let installed=false;
 export function installMusicUi(){
-  if(installed)return;installed=true;
+  if(installed)return;installed=true;installMusicParticipationChat();
   const player=document.getElementById('music-app');if(!player)return;
   let search=null,more=null,menu=null,room=null,collection=null;
   function closeMenu(){menu?.remove();menu=null}

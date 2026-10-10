@@ -1,6 +1,6 @@
 /* Shared Music search UI. Uses the old public data chain and native local playback. */
-import {onlineMusicSearch,verifyTrack,tryLoadLyrics,syncLyrics} from './ib-together-music-data.js';
-import {beginPublicPlayback} from './ib-together-playback-context.js';
+import {onlineMusicSearch} from './ib-together-music-data.js';
+import {playPublicTrack} from './ib-together-track-playback.js';
 export function mountPublicSearch(player){
   let panel=null,controller=null,disposed=false;
   function close(){controller?.abort();controller=null;panel?.remove();panel=null;if(!disposed)player.querySelector('#ma-addtop')?.focus()}
@@ -30,17 +30,7 @@ export function mountPublicSearch(player){
             controller?.abort();controller=new AbortController();const signal=controller.signal;
             results.querySelectorAll('button').forEach(b=>{b.disabled=true});status.textContent='正在获取歌词…';
             try{
-              const verified=await verifyTrack(track,{signal});if(!verified)throw new Error('播放地址暂时不可用');
-              const lyrics=await tryLoadLyrics(track,{signal});if(!active(signal))return;
-              const id='tg_public_'+track.source+'_'+encodeURIComponent(track.id);
-              const previous=await dbGet('music',id);if(!active(signal))return;
-              const record={id,name:track.name,title:track.name,artist:track.artist,album:track.album,cover:track.cover,data:verified.verifiedUrl,addedAt:previous?.addedAt||Date.now(),src:'together-public',publicTrack:{source:track.source,id:track.id,urlId:track.urlId,lyricId:track.lyricId,apiBase:track.apiBase},lyrics};
-              await dbPut('music',record);if(!active(signal))return;
-              beginPublicPlayback();
-              await _pwLoad();if(!active(signal))return;
-              const index=_pw.list.findIndex(r=>r.id===id);if(index<0)throw new Error('歌曲未进入本地曲库');
-              await _pwPlayIdx(index);if(!active(signal))return;
-              syncLyrics();
+              await playPublicTrack(track,{signal,active:()=>active(signal)});
               if(_pw.a?.paused){status.textContent='歌曲已添加，但播放未开始。请关闭搜索后用原生播放键重试。';return}
               close();
             }catch(error){if(active(signal))status.textContent='暂时无法播放，请重试'}

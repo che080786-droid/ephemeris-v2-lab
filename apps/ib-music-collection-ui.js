@@ -1,4 +1,5 @@
-import {readLibrary,trackKey,toggleLike,addToPlaylist} from './ib-music-library.js';
+import {executeMusicAction} from './ib-music-actions.js';
+import {readLibrary,trackKey,addToPlaylist,likeState} from './ib-music-library.js';
 import {mountRoomBackground} from './ib-listen-background.js';
 const currentTrack=()=>typeof _pw!=='undefined'?_pw.list?.[_pw.idx]:null;
 const notify=message=>window.toast?.(message);
@@ -11,12 +12,14 @@ export function mountMusicCollection(player){
   const roomBackground=mountRoomBackground(player,background);
   function refresh(){
     if(disposed)return;
-    const track=currentTrack(),key=trackKey(track);let liked=false;
-    try{liked=readLibrary().liked.includes(key)}catch(e){/* Leave damaged storage intact; writes report a failure. */}
-    heart.disabled=!key;heart.setAttribute('aria-pressed',String(liked));heart.setAttribute('aria-label',liked?'取消喜欢当前歌曲':'喜欢当前歌曲');heart.title=liked?'取消喜欢':'喜欢';
+    const track=currentTrack(),key=trackKey(track);let states={mingyue:false,yanjing:false};
+    try{states=likeState(track)}catch(e){/* Leave damaged storage intact; writes report a failure. */}
+    const liked=states.mingyue;
+    heart.dataset.both=String(states.mingyue&&states.yanjing);heart.dataset.yanjing=String(states.yanjing);
+    heart.disabled=!key;heart.setAttribute('aria-pressed',String(liked));heart.title=states.mingyue&&states.yanjing?'我们都喜欢 · 取消明月喜欢':states.yanjing?'晏景喜欢 · '+(liked?'取消明月喜欢':'明月喜欢'):liked?'取消明月喜欢':'明月喜欢';heart.setAttribute('aria-label',heart.title);
     roomBackground.refresh();
   }
-  heart.addEventListener('click',()=>{try{const track=currentTrack();if(!trackKey(track))return;notify(toggleLike(track)?'已喜欢':'已取消喜欢')}catch(e){notify('未能保存喜欢状态，请检查浏览器存储空间')}});
+  heart.addEventListener('click',async()=>{try{const track=currentTrack();if(!trackKey(track))return;const liked=likeState(track).mingyue;await executeMusicAction({type:liked?'unlike_song':'like_song',actor:'mingyue',track:{recordId:track.id}});notify(liked?'已取消喜欢':'已喜欢')}catch(e){notify('未能保存喜欢状态，请检查浏览器存储空间')}});
   function close(){dialog?.remove();dialog=null;if(!disposed)player.querySelector('.tg-music-more')?.focus()}
   function open(label){
     close();dialog=document.createElement('section');dialog.className='tg-collection-dialog';dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-label',label);

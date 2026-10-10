@@ -11,9 +11,11 @@ export function trackKey(track){
 }
 export function readLibrary(){
   const raw=localStorage.getItem(LIBRARY_KEY);
-  if(!raw)return {version:1,tracks:{},liked:[],playlists:[]};
+  if(!raw)return {version:2,tracks:{},liked:[],actorLikes:{mingyue:[],yanjing:[]},playlists:[]};
   const data=JSON.parse(raw);
-  if(data.version!==1||!data.tracks||!Array.isArray(data.liked)||!Array.isArray(data.playlists))throw new Error('Invalid music collection');
+  if(![1,2].includes(data.version)||!data.tracks||!Array.isArray(data.liked)||!Array.isArray(data.playlists))throw new Error('Invalid music collection');
+  data.actorLikes={mingyue:[...new Set([...(data.actorLikes?.mingyue||[]),...data.liked])],yanjing:[...new Set(data.actorLikes?.yanjing||[])]};
+  data.version=2;data.liked=[...data.actorLikes.mingyue];
   return data;
 }
 function remember(data,track){
@@ -22,11 +24,14 @@ function remember(data,track){
   return key;
 }
 function save(data){localStorage.setItem(LIBRARY_KEY,JSON.stringify(data));window.dispatchEvent(new Event('ib-music-library-change'))}
-export function toggleLike(track){
-  const data=readLibrary(),key=remember(data,track),index=data.liked.indexOf(key);
-  if(index<0)data.liked.push(key);else data.liked.splice(index,1);
-  save(data);return index<0;
+export function likeState(track){const data=readLibrary(),key=trackKey(track);return {mingyue:data.actorLikes.mingyue.includes(key),yanjing:data.actorLikes.yanjing.includes(key)}}
+export function setLike(track,actor,liked){
+  if(!['mingyue','yanjing'].includes(actor))throw new Error('Invalid actor');
+  const data=readLibrary(),key=remember(data,track),list=data.actorLikes[actor],index=list.indexOf(key);
+  if(liked&&index<0)list.push(key);if(!liked&&index>=0)list.splice(index,1);
+  data.liked=[...data.actorLikes.mingyue];save(data);return liked;
 }
+export function toggleLike(track,actor='mingyue'){return setLike(track,actor,!likeState(track)[actor])}
 export function addToPlaylist(track,{id,name}={}){
   const data=readLibrary(),key=remember(data,track);let playlist;
   if(id){playlist=data.playlists.find(p=>p.id===id);if(!playlist)throw new Error('Playlist missing')}
