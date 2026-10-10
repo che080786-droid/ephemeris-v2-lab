@@ -24,7 +24,7 @@ export function mountMusicCollection(player){
     dialog.addEventListener('click',e=>{if(e.target===dialog)close()});
     dialog.addEventListener('keydown',e=>{
       if(e.key==='Escape'){e.preventDefault();close()}
-      if(e.key==='Tab'){const nodes=[...dialog.querySelectorAll('button:not(:disabled),input:not([hidden])')],first=nodes[0],last=nodes.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}
+      if(e.key==='Tab'){const nodes=[...dialog.querySelectorAll('button:not(:disabled),input:not([hidden]),select:not(:disabled)')],first=nodes[0],last=nodes.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}
     });return card;
   }
   function button(card,label,action){const b=document.createElement('button');b.type='button';b.textContent=label;b.addEventListener('click',action);card.appendChild(b);return b}

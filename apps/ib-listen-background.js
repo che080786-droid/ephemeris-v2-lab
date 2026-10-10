@@ -1,4 +1,5 @@
 /* Room presentation only. Images and selection are committed together in IndexedDB. */
+import {mountTogetherTheme} from './ib-together-theme.js';
 import {BACKGROUNDS,readBackground} from './ib-music-library.js';
 const DB_NAME='IB_ListenBackground',STORE='settings',KEY='room',OPACITY_KEY='opacity';
 const opacityValue=value=>typeof value==='number'&&Number.isFinite(value)?Math.max(0,Math.min(100,Math.round(value))):65;
@@ -53,6 +54,7 @@ async function validateImage(file){
 }
 export function mountRoomBackground(player,background){
   let disposed=false,generation=0,imageUrl='',record={mode:'default',opacity:65},loaded=false,opacityTimer=null,pendingOpacity=null,previewOpacity=null,opacityWrites=Promise.resolve(),sliderSync=null;
+  const theme=mountTogetherTheme(player,background);
   function release(){if(imageUrl)URL.revokeObjectURL(imageUrl);imageUrl=''}
   function refresh(){
     if(disposed)return;
@@ -61,6 +63,7 @@ export function mountRoomBackground(player,background){
     if(player.dataset.tgBackground!==mode)player.dataset.tgBackground=mode;
     const picture=mode==='custom'&&imageUrl?'url("'+imageUrl+'")':mode==='cover'?player.querySelector('#ma-bg').style.backgroundImage:'';
     if(background.style.backgroundImage!==picture)background.style.backgroundImage=picture;
+    theme.refresh();
   }
   async function load(){
     const ticket=++generation;
@@ -82,7 +85,7 @@ export function mountRoomBackground(player,background){
     const card=open('房间背景'),status=document.createElement('p');status.setAttribute('role','status');
     const input=document.createElement('input');input.type='file';input.accept='image/*';input.hidden=true;input.className='tg-background-file';input.setAttribute('aria-label','选择房间背景图片');card.appendChild(input);
     let busy=false;
-    function lock(value){busy=value;card.querySelectorAll('button,input[type=range]').forEach(b=>{b.disabled=value})}
+    function lock(value){busy=value;card.querySelectorAll('button,input[type=range],select').forEach(b=>{b.disabled=value})}
     async function save(mode,image){
       if(busy)return;lock(true);status.textContent='正在保存背景…';
       try{
@@ -105,9 +108,10 @@ export function mountRoomBackground(player,background){
     opacityRow.append(caption,amount,slider);card.appendChild(opacityRow);sliderSync=syncSlider;syncSlider();
     slider.addEventListener('input',()=>{record.opacity=Number(slider.value);pendingOpacity=record.opacity;previewOpacity=record.opacity;amount.value=slider.value+'%';refresh();clearTimeout(opacityTimer);opacityTimer=setTimeout(persistOpacity,150)});
     slider.addEventListener('change',persistOpacity);
+    theme.picker(card);
     button(card,'恢复默认背景',()=>save('default'));
     for(const [mode,label] of BACKGROUNDS.filter(([id])=>id!=='default')){const b=button(card,label,()=>save(mode));b.setAttribute('aria-pressed',String(record.mode===mode))}
     card.appendChild(status);button(card,'取消',close);choose.focus();
   }
-  return {refresh,picker,dispose(){persistOpacity();sliderSync=null;disposed=true;++generation;window.removeEventListener('ib-listen-background-change',load);window.removeEventListener('storage',load);release()}};
+  return {refresh,picker,dispose(){theme.dispose();persistOpacity();sliderSync=null;disposed=true;++generation;window.removeEventListener('ib-listen-background-change',load);window.removeEventListener('storage',load);release()}};
 }

@@ -151,3 +151,33 @@ body.theme-infernal #music-app.tg-listen[data-tg-background=custom] .tg-chat-emp
 #music-app.playing:not(.tg-listen) .ma-arm{transform:translateY(0) rotate(-3deg)}
 body.ib-reduce #music-app:not(.tg-listen) .ma-arm{transition:none}
 @media(prefers-reduced-motion:reduce){#music-app:not(.tg-listen) .ma-arm{transition:none}}
+
+/* One fixed avatar geometry; overlap and the absolute connector never resize either slot. */
+#music-app.tg-listen .tg-room-pair .ma-ava{flex:0 0 48px;width:48px;min-width:48px;max-width:48px;height:48px;min-height:48px;max-height:48px;box-sizing:border-box;border:1.5px solid var(--tg-border);border-radius:50%;transform:none}
+#music-app.tg-listen .tg-room-pair .ma-ava img,#music-app.tg-listen .tg-room-pair .ma-ava svg{flex:none;width:45px;height:45px;max-width:none;max-height:none;object-fit:cover;transform:none}
+/* Light/dark describe the foreground scheme; automatic selection is handled locally. */
+html body #music-app.tg-listen{
+  --tg-foreground:#242321;--tg-secondary:rgba(36,35,33,.72);--tg-border:rgba(36,35,33,.22);--tg-glass:rgba(250,249,247,.64);--tg-progress:#373532;
+  --tg-soft:rgba(36,35,33,.08);--tg-sheet:rgba(250,249,247,.95);--tg-shadow:rgba(255,255,255,.85);--tg-veil:rgba(255,255,255,.06);
+  --tx:var(--tg-foreground);--tx2:var(--tg-secondary);--tx3:var(--tg-secondary);--acc:var(--tg-progress);--glass-line:var(--tg-border);--glass:var(--tg-glass);--soft:var(--tg-soft);--sheet:var(--tg-sheet);
+  background:#efeeeb;color:var(--tg-foreground);color-scheme:light;
+}
+html body.theme-infernal #music-app.tg-listen{background:#171717}
+html body #music-app.tg-listen[data-tg-theme=dark]{
+  --tg-foreground:#f5f3ef;--tg-secondary:rgba(245,243,239,.74);--tg-border:rgba(245,243,239,.24);--tg-glass:rgba(26,25,24,.62);--tg-progress:#e4e0d9;
+  --tg-soft:rgba(245,243,239,.1);--tg-sheet:rgba(26,25,24,.95);--tg-shadow:rgba(0,0,0,.85);--tg-veil:rgba(0,0,0,.08);color-scheme:dark;
+}
+html body #music-app.tg-listen .ma-scrim{background:var(--tg-veil)}
+html body #music-app.tg-listen .ma-title,html body #music-app.tg-listen .ma-t,html body #music-app.tg-listen .ma-btn,html body #music-app.tg-listen .ma-head .icon-btn:not(.tg-song-heart){color:var(--tg-foreground)!important}
+html body #music-app.tg-listen .ma-s,html body #music-app.tg-listen .ma-tm,html body #music-app.tg-listen .ma-ln{color:var(--tg-secondary)!important}
+html body #music-app.tg-listen .ma-ln.on{color:var(--tg-foreground)!important}
+html body #music-app.tg-listen .ma-btn svg{filter:none}
+html body #music-app.tg-listen .ma-pb{background:var(--tg-soft)!important;border-color:var(--tg-border)!important;box-shadow:none!important}
+html body #music-app.tg-listen .ma-pb i{background:var(--tg-progress)!important;box-shadow:none!important}
+html body #music-app.tg-listen .ma-pb i::after{background:var(--tg-progress)!important;border-color:var(--tg-border)!important;box-shadow:0 1px 5px rgba(0,0,0,.2)!important}
+html body #music-app.tg-listen[data-tg-background=custom] .ma-lyr,html body #music-app.tg-listen[data-tg-background=custom] .ma-info,html body #music-app.tg-listen[data-tg-background=custom] .tg-chat-empty{text-shadow:0 1px 3px var(--tg-shadow),0 0 6px var(--tg-shadow)}
+#music-app .tg-theme-setting{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:16px 0;color:var(--tx);font:.82rem/1.6 var(--sys)}
+#music-app .tg-theme-setting select{padding:8px 12px;border:1px solid var(--glass-line);border-radius:10px;background:var(--sheet);color:var(--tx);font:inherit}
+html body #music-app.tg-listen .ma-art .ma-vinyl{background:var(--tg-soft)!important}
+html body #music-app.tg-listen .ma-art .ma-vlabel svg{stroke:var(--tg-foreground)!important}
+html body #music-app.tg-listen:not(.has-cover) .ma-art .ma-vlabel{background:var(--tg-soft)!important;box-shadow:none}
