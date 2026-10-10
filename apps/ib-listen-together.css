@@ -130,3 +130,10 @@ body.theme-infernal #music-app.tg-listen[data-tg-background=cover] .tg-room-back
 body.theme-infernal #music-app.tg-listen[data-tg-background=dawn] .tg-room-background{background:linear-gradient(150deg,#49343e,#302c48 45%,#233349)}
 body.theme-infernal #music-app.tg-listen[data-tg-background=sea] .tg-room-background{background:linear-gradient(160deg,#203e3b,#23383f 48%,#233049)}
 body.theme-infernal #music-app.tg-listen[data-tg-background=night] .tg-room-background{background:linear-gradient(140deg,#272442,#202d45 50%,#182534)}
+
+/* Custom photos stay on the room backdrop across both modes, behind all controls. */
+#music-app .tg-collection-card .tg-background-file[hidden]{display:none}
+#music-app .tg-collection-card button:disabled{opacity:.55;cursor:wait}
+#music-app.tg-listen[data-tg-background=custom] .tg-room-background{inset:-4px;background-position:center;background-size:cover;background-repeat:no-repeat;filter:blur(3px) saturate(.8)}
+#music-app.tg-listen[data-tg-background=custom] .ma-scrim{background:rgba(239,244,251,.78)}
+body.theme-infernal #music-app.tg-listen[data-tg-background=custom] .ma-scrim{background:rgba(15,22,38,.8)}
