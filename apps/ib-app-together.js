@@ -11,15 +11,10 @@
     });
     return listenStyle;
   }
-  async function openListenTogether(){
-    var musicUi=await import('./ib-together-music-ui.js');
-    musicUi.installMusicUi();
+  async function inviteListenTogether(){
     await loadListenStyle();
-    await window.openMusicApp();
-    var player=document.getElementById('music-app');if(!player)return;
-    // Presentation only: keep the native audio, lyrics, pairing and controls untouched.
-    if(player.classList.contains('tg-listen'))return;
-    player.classList.add('tg-listen');
+    var invitations=await import('./ib-together-invitation-ui.js');
+    await invitations.inviteFromTogether();
   }
   var icon='<circle cx="9" cy="8.4" r="3.5"/><path d="M3.6 19.6a5.4 5.4 0 0 1 10.8 0"/><path d="M15.4 5.7a3.5 3.5 0 0 1 0 5.4"/><path d="M16.6 14.4a5.4 5.4 0 0 1 3.6 5.2"/>';
   var activities=[
@@ -40,11 +35,10 @@
         button.innerHTML='<span class="tg-top"><span>0'+(i+1)+' / '+a.id.toUpperCase()+'</span><svg viewBox="0 0 24 24" aria-hidden="true">'+a.icon+'</svg></span><span class="tg-title">'+a.title+'</span><span class="tg-name">'+a.name+'</span><span class="tg-text">'+a.text+'</span>';
         button.addEventListener('click',async function(){
           if(a.id==='listen'){
-            // The SDK has no music opener; use the existing public native entry.
-            if(typeof window.openMusicApp!=='function'){ctx.ui.toast('音乐入口尚未就绪，请稍后再试');return;}
             button.disabled=true;
-            try{await openListenTogether();IBApps.close('together');}
-            catch(e){button.disabled=false;ctx.ui.toast('暂时无法打开音乐，请稍后再试');}
+            try{await inviteListenTogether();}
+            catch(e){ctx.ui.toast('邀请暂时无法发出，请稍后再试');}
+            finally{button.disabled=false;}
             return;
           }
           var target=a.id==='read'?'coread':'cinema';

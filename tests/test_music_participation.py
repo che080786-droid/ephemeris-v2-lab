@@ -35,8 +35,9 @@ with sync_playwright() as p:
   previous=page.evaluate('()=>_msgs.at(-1)?.id||null')
   page.locator('[data-music-participation=mock]').evaluate('(b)=>b.click()')
   page.locator('.ib-music-mock-picker select').select_option(scenario);page.locator('.ib-music-mock-picker').get_by_role('button',name='发送',exact=True).click()
-  if scenario!='loading':page.wait_for_function('(previous)=>_msgs.length>0&&_msgs.at(-1).id!==previous&&_msgs.at(-1).musicParticipation?.pending===false',arg=previous)
- mock('like');assert page.evaluate('()=>JSON.parse(localStorage.ib_music_library_v1).actorLikes.yanjing.includes("local:two")')
+  # pending becomes false before effects and redraw finish; wait for the completed bubble too.
+  if scenario!='loading':page.wait_for_function('(previous)=>{const m=_msgs.at(-1);if(!m||m.id===previous||m.musicParticipation?.pending!==false)return false;const row=document.querySelector("#cv-msgs .m[data-id="+CSS.escape(m.id)+"]");return !!row&&!row.textContent.includes("正在想…")}',arg=previous)
+ mock('like');assert page.evaluate('()=>JSON.parse(localStorage.ib_music_library_v1).actorLikes.yanjing.includes("local:two")'),page.evaluate('()=>({track:_pw.list[_pw.idx]?.id,message:_msgs.at(-1)?.content,actions:_msgs.at(-1)?.musicParticipation?.actions})')
  mock('recommend');assert page.locator('#cv-msgs .ib-music-card').last.get_by_role('button',name='播放',exact=True).count()==1
  assert '晴天' in page.locator('#cv-msgs .ib-music-card').last.inner_text()
  page.locator('#cv-msgs .ib-music-card').last.get_by_role('button',name='播放',exact=True).click();page.wait_for_function('()=>_pw.list[_pw.idx]?.publicTrack?.id==="101"&&!_pw.a.paused')
@@ -50,7 +51,8 @@ with sync_playwright() as p:
  assert page.evaluate("async()=>{const {normalizeResponse}=await import('./apps/ib-together-ai-adapter.js');return normalizeResponse({text:'下一首，喜欢这首歌'}).actions.length===0}")
  assert page.evaluate("async()=>{const {normalizeMusicAction}=await import('./apps/ib-music-actions.js');try{normalizeMusicAction({type:'next_track',actor:'unknown'});return false}catch(e){return true}}")
  mock('invite');card=page.locator('#cv-msgs .ib-music-card').last;assert card.get_by_role('button',name='暂时不要',exact=True).count()==1
- card.get_by_role('button',name='暂时不要',exact=True).click();page.wait_for_function('()=>Object.values(JSON.parse(localStorage.ib_music_participation_v1).invitations).some(i=>i.actor==="yanjing"&&i.status==="declined")')
+ page.locator('dialog.tg-invitation').get_by_role('button',name='暂时不要',exact=True).click();page.wait_for_function('()=>Object.values(JSON.parse(localStorage.ib_music_participation_v1).invitations).some(i=>i.actor==="yanjing"&&i.status==="declined")')
+ page.locator('dialog.tg-invitation').get_by_role('button',name='关闭',exact=True).click()
  mock('invite');assert page.evaluate('()=>_msgs.at(-1).musicParticipation.results.length===0');assert '稍后再邀请' in page.locator('#cv-msgs').inner_text()
  mock('decline');assert '先不听，好不好' in page.locator('#cv-msgs').inner_text();assert '这次先不一起听' in page.locator('#cv-msgs .ib-music-card').last.inner_text()
  mock('loading');page.wait_for_function('()=>_msgs.at(-1)?.musicParticipation?.pending===true');mock('error');assert page.evaluate('()=>_msgs.at(-1).musicParticipation.pending===false')

@@ -62,7 +62,7 @@ export async function executeMusicAction(value,{conversationKey='room',friendId=
       const state=readState(),now=Date.now();
       if(action.actor==='yanjing'&&state.lastInviteAt&&now-state.lastInviteAt<INVITE_COOLDOWN_MS)return {kind:'notice',text:'先留一点时间，稍后再邀请。',cooldown:true};
       const existing=Object.values(state.invitations).find(i=>i.status==='pending'&&i.actor===action.actor&&i.conversationKey===conversationKey);
-      if(existing)return {kind:'invitation',id:existing.id,status:existing.status};
+      if(existing){result={kind:'invitation',id:existing.id,status:existing.status};break;}
       const i={id:action.id,actor:action.actor,conversationKey,friendId,status:'pending',createdAt:now};state.invitations[i.id]=i;if(action.actor==='yanjing')state.lastInviteAt=now;saveState(state);result={kind:'invitation',id:i.id,status:i.status};break;
     }
     case 'accept_listen_together':case 'decline_listen_together':{
@@ -72,7 +72,14 @@ export async function executeMusicAction(value,{conversationKey='room',friendId=
       if(resolvingInvitations.has(i.id))throw new Error('INVITATION_BUSY');
       resolvingInvitations.add(i.id);
       try{
-        if(action.type==='accept_listen_together')await openListenTogether(i.friendId);
+        if(action.type==='accept_listen_together'){
+          // Let the invitation card show acceptance before opening the existing room.
+          const ready=[];
+          window.dispatchEvent(new CustomEvent('ib-music-invitation-accepting',{detail:{invitation:i,actor:action.actor,waitUntil:promise=>ready.push(promise)}}));
+          await Promise.all(ready);
+          if(signal?.aborted||!active())throw new DOMException('Cancelled','AbortError');
+          await openListenTogether(i.friendId);
+        }
         const latest=readState(),resolved=latest.invitations[i.id];
         resolved.status=action.type==='accept_listen_together'?'accepted':'declined';resolved.resolvedAt=Date.now();saveState(latest);
         result={kind:'notice',text:resolved.status==='accepted'?'一起听已开启':'这次先不一起听'};
