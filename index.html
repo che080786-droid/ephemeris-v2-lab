@@ -3658,6 +3658,7 @@ self.addEventListener(&#x27;fetch&#x27;,function(e){
     <textarea id="cv-ta" rows="1" placeholder="输入消息…"></textarea>
     <button class="cv-mini" id="cv-mic" aria-label="语音消息"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
     <button class="send-btn" id="cv-send"><svg viewBox="0 0 24 24"><path d="M4 12h13M13 6l6 6-6 6"/></svg></button>
+    <button type="button" id="cv-receive" aria-label="收取回复" title="让晏景回复" disabled>✦</button>
   </div>
   <div id="cv-selbar" class="glass">
     <div class="sel-row"><span class="sel-n" id="sel-n">已选 0</span><button class="btn danger sel-fix" id="sel-del">删除</button><button class="btn sel-fix" id="sel-cancel">取消</button></div>
@@ -4244,6 +4245,8 @@ self.addEventListener(&#x27;fetch&#x27;,function(e){
     <div class="sheet-btns"><button class="btn" data-close="1">关闭</button></div>
   </div>
   <div id="toast"></div>
+<link rel="stylesheet" href="apps/ib-reply-rhythm.css">
+<script src="apps/ib-reply-rhythm.js"></script>
 <script></script><script>
 'use strict';
 const SEC_RENDER={};
@@ -7380,6 +7383,7 @@ function convEl(id){return document.getElementById(id)}
 let _activeThread=null,_threads=[];
 let _convSeq=0;
 async function openConv(cfg,thread){
+  window.IBChatRhythm?.leave();
   try{if(typeof _ibcNavHang==='function')_ibcNavHang(cfg&&cfg.id,thread?thread.id:'')}catch(e){}/* 通话中直达另一会话＝挂断并提示；打开的正是通话所在会话则不动 */
   const _seq=++_convSeq;
   _activeCfg=cfg;_activeThread=thread||null;_msgs=[];_before=null;_more=false;
@@ -7407,6 +7411,7 @@ async function openConv(cfg,thread){
   }catch(e){}
   drawConv();
   _syncSendMirror();
+  await window.IBChatRhythm?.open(cfg,thread);
   if(!cfg._group)setTimeout(()=>{const _go=()=>{maybeSummarizeM(cfg,_activeThread?_activeThread.id:null).catch(()=>{})};if(window.requestIdleCallback)requestIdleCallback(_go,{timeout:2500});else _go()},1500);
 }
 async function loadThreadsBar(cfg){
@@ -9264,30 +9269,23 @@ async function callAIC(cfg,hist,sys,onDelta,signal,pa){
   return{t:full,k:fullK,u:u,fin:fin};
 }
 function sendBtnState(sending){
-  const b=document.getElementById('cv-send');
-  b.classList.toggle('stop',sending);
-  b.innerHTML=sending
-    ?'<svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1.5"/></svg>'
-    :'<svg viewBox="0 0 24 24"><path d="M4 12h13M13 6l6 6-6 6"/></svg>';
+  window.IBChatRhythm?.paint();
 }
 document.getElementById('cv-send').addEventListener('click',()=>{
-  const _k=_convKey(_activeCfg);
-  if(_sendKeys.has(_k)){const c=_acMap[_k];if(c)c.abort();return}
   sendMsg();
 });
 async function sendMsg(){
   const cfg=_activeCfg;if(!cfg)return;
-  if(_sendKeys.has(_convKey(cfg)))return;
+  const thread=_activeThread,ownMsgs=_msgs;
   const t=ta.value.trim();
   if(!t&&!_pendImgs.length&&!_pendFiles.length&&!window._ibPendStk)return;
-  if(!cfg.apiKey&&!cfg._group){toast('这个配置还没有 API Key，请到 API 页填写');return}/* v59-m t19：群聊伪配置天生无 Key，补豁免（sendQuickText 同款） */
-  const um={id:'msg_'+Date.now()+'_u',role:'user',content:t,friendId:cfg.id,timestamp:Date.now()};
+  const stamp=IBReplyRhythm.stamp();
+  const um={id:'msg_'+stamp+'_'+crypto.randomUUID(),role:'user',content:t,friendId:cfg.id,timestamp:stamp};
   if(_activeThread)um.threadId=_activeThread.id;
   if(_pendImgs.length)um.images=_pendImgs.map(u=>({dataUrl:u,mime:'image/jpeg'}));
   if(window._ibPendStk)um.sticker={id:window._ibPendStk.id,name:String(window._ibPendStk.name||'').slice(0,12),desc:String(window._ibPendStk.desc||'').slice(0,60),use:String(window._ibPendStk.use||'').slice(0,80),dataUrl:window._ibPendStk.dataUrl};
   if(_quote)um.quote={name:_quote.name,text:_quote.text};
   if(_pendFiles.length)um.files=_pendFiles.map(f=>({fileId:f.fileId,name:f.name,size:f.size,text:f.text}));
-  try{await dbPut('chatMessages',um)}catch(e){toast('本地保存失败');return}
   _presTouch();/* v49g-m：发消息即视为活跃 */
   _msgs.push(um);
   const box=convEl('cv-msgs');
@@ -9298,7 +9296,12 @@ async function sendMsg(){
   _pendImgs=[];_pendFiles=[];window._ibPendStk=null;drawAttach();
   setQuote(null);
   pinBottom();
-  if(cfg._group){try{_gAutoReset(cfg)}catch(e){}genReplyGroup(cfg)}else genReply(cfg);/* v250-p：用户开口＝自动发言重新计数 */
+  try{await window.IBChatRhythm.saveUser(cfg,thread,um)}catch(e){
+    const i=ownMsgs.findIndex(m=>m.id===um.id);if(i>=0)ownMsgs.splice(i,1);
+    box.querySelector('.m[data-id="'+um.id+'"]')?.closest('.mrow')?.remove();
+    if(_activeCfg?.id===cfg.id&&(_activeThread?.id||'')===(thread?.id||'')&&!ta.value){ta.value=t;autoGrow()}
+    toast('本地保存失败，请重试');
+  }
 }
 
 async function getSummarySettingsM(){
@@ -9453,20 +9456,23 @@ function buildTypingRow(name,avaSrc){
 }
 async function genReply(cfg,internalCtx){
   if(!cfg)return;
-  const myThread=_activeThread;
-  const myKey=_keyOf(cfg.id,myThread?myThread.id:'');
+  const manual=internalCtx?.rhythmTurn,room=!!internalCtx?.room;
+  const myThread=internalCtx?internalCtx.thread||null:_activeThread;
+  const myKey=internalCtx?.key||_keyOf(cfg.id,myThread?myThread.id:'');
   if(_sendKeys.has(myKey))return;
   _sendKeys.add(myKey);
   try{if(window.IBApps)IBApps._emit('turn',{cfgId:cfg.id,threadId:myThread?String(myThread.id||''):'',state:'start'})}catch(e){}/* v189-p：回合开始 */
   
-  const myAc=new AbortController();_acMap[myKey]=myAc;
-  const myMsgs=_msgs;
-  const sameConv=()=>!!_activeCfg&&_activeCfg.id===cfg.id&&((_activeThread?_activeThread.id:'')===(myThread?myThread.id:''));
+  const myAc=manual?.controller||new AbortController();_acMap[myKey]=myAc;
+  const myMsgs=internalCtx?.messages||_msgs.slice();
+  const userQuery=manual?myMsgs.filter(m=>manual.ids.includes(m.id)).map(m=>String(m.content||'')).join('\n'):(myMsgs.at(-1)?.content||'');
+  const sameConv=internalCtx?.active||(()=>!!_activeCfg&&_activeCfg.id===cfg.id&&((_activeThread?_activeThread.id:'')===(myThread?myThread.id:'')));
   let box=null,aiEl=null,txtEl=null,thWrap=null,thEl=null,_bub=null;
   let accT='',accK='';
   let _fedH=null,_gqTaken=null,_pgTaken=null;/* fix-m①：结果回执与回灌句柄（catch 在 try 外，须提升） */
   const onDelta=(t,k)=>{
     accT=t;accK=k;
+    if(manual)return;/* Buffer structured output; never stream JSON syntax into a chat bubble. */
     try{if(window.IBApps)IBApps._emit('delta',{cfgId:cfg.id,threadId:myThread?String(myThread.id||''):'',text:t,think:k})}catch(e){}/* v189-p：流式正文与思考链逐段派给打开中的 APP */
     try{if(window._IBCALL)window._IBCALL._onDelta(cfg,t)}catch(e){}
     if(!box||!txtEl)return;
@@ -9478,27 +9484,27 @@ async function genReply(cfg,internalCtx){
     if(nearBottom)box.scrollTop=box.scrollHeight;
   };
   try{
-    _sending=true;sendBtnState(true);_ac=myAc;
+    if(!room){_sending=true;sendBtnState(true);_ac=myAc;
     box=convEl('cv-msgs');
     const _tp=buildTypingRow(cfgName(cfg),_pfAvatar(cfg));
     aiEl=_tp.row;
     if(box){box.appendChild(aiEl);box.scrollTop=box.scrollHeight}
-    txtEl=_tp.txtEl;thWrap=_tp.thWrap;thEl=_tp.thEl;_bub=_tp.bubble;
+    txtEl=_tp.txtEl;thWrap=_tp.thWrap;thEl=_tp.thEl;_bub=_tp.bubble;}
     const a=await loadAbout();
     await loadMP();const pa=mpAi(cfg);
     const parts=[(cfg.systemPrompt||'').trim(),_ibSiteNoteM(a),((cfg.systemPrompt||'').trim()?'':_IB_NOPERSONA_NOTE),buildUserCtx(a,cfg)];/* v189-p：没有人设的配置先说明下面是对方的资料 */
     const _quietM=!!(myThread&&myThread.quiet);
-    const _memOn=_activeThread?!!_activeThread.memoryEnabled:(pa.memInject!==false);
+    const _memOn=myThread?!!myThread.memoryEnabled:(pa.memInject!==false);
     try{_ibSetMemScope(_memOn,false,false)}catch(e){}/* 1对1：检索口径＝注入口径 */
     let _memTailM='',_postsTailM='';
     if(_memOn){
-      try{let _mems9=await dbGetAll('memories');if(_quietM)_mems9=_mems9.filter(m=>m&&(m.createdBy===cfg.id||m.createdBy==='user'||!m.createdBy));/* v199-p：没标执笔者的老记忆按用户手建放行（作者判定与电脑端 _formatMemLine 一致） *//* v189-p：安静频道只注入这位 TA 自己写的与用户手建的记忆 */_memTailM=buildMemBlock(_mems9,cfg.id,await loadMS(),undefined,undefined,(myMsgs.length?String(myMsgs[myMsgs.length-1].content||''):''))||''}catch(e){}/* v88-m：传入当前用户消息做相关性加权 */
+      try{let _mems9=await dbGetAll('memories');if(_quietM)_mems9=_mems9.filter(m=>m&&(m.createdBy===cfg.id||m.createdBy==='user'||!m.createdBy));/* v199-p：没标执笔者的老记忆按用户手建放行（作者判定与电脑端 _formatMemLine 一致） *//* v189-p：安静频道只注入这位 TA 自己写的与用户手建的记忆 */_memTailM=buildMemBlock(_mems9,cfg.id,await loadMS(),undefined,undefined,String(userQuery))||''}catch(e){}/* v88-m：传入当前用户消息做相关性加权 */
     }
     {const _blogModeM=_quietM?0:(parseInt(pa.postsLimit,10)||0);if(_blogModeM!==0){
       try{_postsTailM=await buildPostsBlock(_blogModeM)||''}catch(e){}
     }}
     let amBlock=null;
-    try{amBlock=await buildAmBlocks(cfg,myMsgs.length?(myMsgs[myMsgs.length-1].content||''):'')}catch(e){}
+    try{amBlock=await buildAmBlocks(cfg,userQuery)}catch(e){}
     if(amBlock&&amBlock.sys)parts.push(amBlock.sys);/* 指令块进 system；档案本体挪到 system 末尾第二块（见下方人格收束处），always 条目改动时只重写那一块 */
     if(!_quietM)try{parts.push(await buildToolsBlock())}catch(e){}
       if(!_quietM)try{await loadMP();const _pm=(_mp&&_mp.perms)||{};const _gwCaps=[];
@@ -9530,17 +9536,18 @@ async function genReply(cfg,internalCtx){
     /* v89-m：联网搜索使用边界已按用户决定移除（不再注入任何"何时不该搜"说明） */
     try{if(window._ibAppSysM&&window._ibAppSysM.text&&(!window._ibAppSysM.cfgId||window._ibAppSysM.cfgId===cfg.id))parts.push(String(window._ibAppSysM.text).slice(0,4000))}catch(e){}/* v189-p：桌面 APP 常驻说明（随 ctx.sys.set 整块进 System，切换即重建一次缓存） */
       parts.push(_SYS_SPLIT_M+((amBlock&&amBlock.stable)?amBlock.stable+'\n\n':'')+_IB_PERSONA_LOCK.replace(/^\n+/,''));/* v87-m 人格收束：System 末尾固定说明 *//* 分隔符之后＝第二块（档案核心 + 人格收束），Anthropic 单独一个断点 */
-    const sys=parts.filter(Boolean).join('\n\n');
+    const sys=parts.filter(Boolean).join('\n\n')+(manual?'\n\n'+IBReplyRhythm.protocol:'')+(internalCtx?.systemContext?'\n\n'+internalCtx.systemContext:'');
     let _sumText=null,_ssM=null;
     try{_ssM=await getSummarySettingsM();
-      if(_ssM.enabled){const ex=await getChatSummaryM(cfg,_activeThread?_activeThread.id:null);if(ex)_sumText=ex.summary}
+      if(_ssM.enabled){const ex=await getChatSummaryM(cfg,myThread?myThread.id:null);if(ex)_sumText=ex.summary}
     }catch(e){}
     const _histLim=(_sumText&&!(_ssM&&_ssM.summaryScope==='ctx'))?Math.max(2,(_ssM&&_ssM.keepCount)||6):Math.max(4,pa.histLimit||40);/* 本轮：覆盖范围 ctx＝原文仍按上下文条数发送，摘要只兜窗口之外 */
     let _histSrc9=myMsgs;
-    try{const _hs9=await _apiHistSrcM(cfg.id,myThread?myThread.id:null,_histLim);
+    try{const _hs9=manual?null:await _apiHistSrcM(cfg.id,myThread?myThread.id:null,_histLim);
       if(_hs9&&_hs9.length&&myMsgs.length&&_hs9[_hs9.length-1].id===myMsgs[myMsgs.length-1].id)_histSrc9=_hs9;
     }catch(e){}
-    const hist=buildHist(_histSrc9,_histLim,myThread?Object.assign({},cfg,{sealTimestamp:sealOf(cfg,myThread)}):cfg);
+    const _batchStart=manual?myMsgs.findIndex(m=>manual.ids.includes(m.id)):-1;
+    const hist=buildHist(_histSrc9,Math.max(_histLim,_batchStart>=0?myMsgs.length-_batchStart:0),myThread?Object.assign({},cfg,{sealTimestamp:sealOf(cfg,myThread)}):cfg);
     _fedH=await feedToolResults(hist,cfg);/* fix-m①：取回执 */
     const tails=[];
     tails.push('当前时间：'+new Date().toLocaleString('zh-CN',{year:'numeric',month:'long',day:'numeric',weekday:'long',hour:'2-digit',minute:'2-digit'})+'。');/* v90-m 拍板④：逐轮时间戳（Tail 首行，与电脑端同格式；在末条用户消息内、零缓存代价） */
@@ -9552,7 +9559,7 @@ async function genReply(cfg,internalCtx){
     if(amBlock&&amBlock.dyn)tails.push(amBlock.dyn);/* v223-p：消息尾只带本轮相关命中 */
     if(!_quietM)try{const cb=await buildCalBlock(cfg);if(cb)tails.push(cb)}catch(e){}
       
-    if(!_quietM)try{const mt=buildMusicTail(myMsgs.length?String(myMsgs[myMsgs.length-1].content||''):'',cfg&&cfg.id);if(mt)tails.push(mt)}catch(e){}/* v72-m 模块五 → v88-m：只带正在播放数据；歌单按音乐话题触发 */
+    if(!_quietM)try{const mt=buildMusicTail(String(userQuery),cfg&&cfg.id);if(mt)tails.push(mt)}catch(e){}/* v72-m 模块五 → v88-m：只带正在播放数据；歌单按音乐话题触发 */
       if(!_quietM)try{let bt=await buildBeyondTail(cfg);if(bt){if(bt.length>5500)bt=bt.slice(0,5500)+'\n（清单超出预算已截断——需要完整读某条请用 <ws_beyond_view/>）';tails.push(bt);const _ibx=await _bxInboxTail(cfg);if(_ibx)tails.push(_ibx)}}catch(e){}/* v88-m 第二刀②：Tail 只剩动态清单＋签名资料，操作协议已上移 System */
     try{if(_presGap){if(_presGap.fid===cfg.id){tails.push(_presGap.text);_pgTaken=_presGap}_presGap=null}}catch(e){}/* v49g-m Presence：随本条消息带出后即清空；对话对不上就作废 */
     try{if(_gwFeedQ.length){const _gq=_gwFeedQ.filter(x=>x.fid===cfg.id);_gwFeedQ=_gwFeedQ.filter(x=>x.fid!==cfg.id);_gqTaken=_gq;/* fix-m① */if(_gq.length)tails.push('【调取结果】\n'+_gq.map(x=>x.text).join('\n'))}}catch(e){}/* v83-m r7：ws_loc/ws_weather 结果按承诺在下一条消息回传（任务 12） */
@@ -9568,21 +9575,32 @@ async function genReply(cfg,internalCtx){
     accT=r.t;accK=r.k;var _ru=r.u||null;
     if(!accT.trim())throw new Error((accK&&accK.trim())?'正文为空：思考内容占满了本次输出上限（可到 API → 全局设置 → 输出与续写 调大「单次输出上限」，或关闭该 AI 的思考链）':'返回为空');/* v130-p：把「返回为空」说清楚 */
     if(_fedH){try{_fedH.commit().catch(function(){})}catch(e9){}_fedH=null}_gqTaken=null;_pgTaken=null;
-    const _am0=await saveAi(cfg,accT,accK,aiEl,{myThread,myMsgs,sameConv,usage:_ru,truncated:_finTruncM(r.fin)});
-    try{await _mToolLoop(cfg,pa,sys,hist,accT,_am0,{myThread,myMsgs,sameConv,signal:myAc.signal})}catch(e){}/* v84-m r1：工具/数据类指令在同一轮内多次调用（任务 1） */
+    let _am0;
+    if(manual){
+      aiEl?.remove();
+      const bubbles=await IBReplyRhythm.deliver(manual,accT,async(text,index)=>{
+        if(room){await internalCtx.save(text,index);return}
+        const slot=document.createElement('div');box.appendChild(slot);
+        try{_am0=await saveAi(cfg,text,index===0?accK:'',slot,{myThread,myMsgs,sameConv,usage:index===0?_ru:null,truncated:_finTruncM(r.fin),rhythm:true,signal:myAc.signal,replyBatch:{key:manual.key,ids:manual.ids}})}catch(e){slot.remove();throw e}
+      },{active:sameConv});
+      if(!room&&sameConv()&&!myAc.signal.aborted)try{await _mToolLoop(cfg,pa,sys,hist,bubbles.join('\n\n'),_am0,{myThread,myMsgs,sameConv,signal:myAc.signal,rhythmTurn:manual})}catch(e){}
+    }else{
+      _am0=await saveAi(cfg,accT,accK,aiEl,{myThread,myMsgs,sameConv,usage:_ru,truncated:_finTruncM(r.fin)});
+      try{await _mToolLoop(cfg,pa,sys,hist,accT,_am0,{myThread,myMsgs,sameConv,signal:myAc.signal})}catch(e){}
+    }
   }catch(err){
     try{if(_fedH){_fedH.restore();_fedH=null}}catch(e9){}try{if(_gqTaken&&_gqTaken.length){_gwFeedQ=_gqTaken.concat(_gwFeedQ);_gqTaken=null}}catch(e9){}try{if(_pgTaken&&!_presGap){_presGap=_pgTaken;_pgTaken=null}}catch(e9){}/* fix-m①：请求未送达→动态配图/调取结果/离开时长放回队首；文本结果因未标 fed 下次自动重传 */
     if(err&&err.name==='AbortError'){
-      if(accT.trim()){await saveAi(cfg,accT,accK,aiEl,{myThread,myMsgs,sameConv});toast('已停止，保留了已生成的部分')}
+      if(!manual&&accT.trim()){await saveAi(cfg,accT,accK,aiEl,{myThread,myMsgs,sameConv});toast('已停止，保留了已生成的部分')}
       else{if(aiEl&&aiEl.isConnected)aiEl.remove();toast('已停止')}
     }else{
       if(aiEl&&aiEl.isConnected)aiEl.remove();
-      toast((sameConv()?'':cfgName(cfg)+'：')+'请求失败：'+(err&&err.message?err.message:'未知错误'));
+      if(room)internalCtx.error?.(err);else toast((sameConv()?'':cfgName(cfg)+'：')+'请求失败：'+(err&&err.message?err.message:'未知错误'));
     }
   }finally{
     _sendKeys.delete(myKey);delete _acMap[myKey];
     try{if(window.IBApps)IBApps._emit('turn',{cfgId:cfg.id,threadId:myThread?String(myThread.id||''):'',state:'end'})}catch(e){}/* v189-p：回合结束（含失败） */
-    if(sameConv()){_sending=false;sendBtnState(false);_ac=null}
+    if(!room&&sameConv()){_sending=false;sendBtnState(false);_ac=null}
     try{if(window._IBCALL)window._IBCALL._onTurnEnd(cfg)}catch(e){}/* 通话回合收尾（含请求失败路径） */
   }
 }
@@ -9656,13 +9674,19 @@ async function saveAi(cfg,content,thinking,aiEl,ctx){/* v54-m ctx：后台完成
   const th=ctx?ctx.myThread:_activeThread;
   let _brCardsM=[];
   try{const _bpM=_parseBlogReadOpsM(content);if(_bpM.ops.length){content=_bpM.clean;_brCardsM=await _execBlogReadOpsM(_bpM.ops,cfg,th?th.id:'')}}catch(e){}
-  const am={id:'msg_'+Date.now()+'_'+Math.floor(Math.random()*100000),role:'assistant',content:content,
-    friendId:cfg.id,senderName:cfgName(cfg),timestamp:Date.now()};
+  const stamp=ctx?.rhythm?IBReplyRhythm.stamp():Date.now();
+  const am={id:'msg_'+stamp+'_'+crypto.randomUUID(),role:'assistant',content:content,
+    friendId:cfg.id,senderName:cfgName(cfg),timestamp:stamp};
   if(th)am.threadId=th.id;
+  if(ctx?.replyBatch)am.replyBatch=ctx.replyBatch;
+  else if(ctx?.myMsgs)am.replyBatch={key:'chat:'+JSON.stringify([cfg.id,th?.id||'']),ids:ctx.myMsgs.filter(m=>m.role==='user').map(m=>m.id)};
   if(thinking&&thinking.trim())am.thinking=thinking;
   if(ctx&&ctx.usage)am.usage=ctx.usage;/* v59-m t14/t18：本条 token 用量随消息入库，长按面板即可见 */
   if(ctx&&ctx.truncated)am.truncated=true;/* v65-m：自动续写轮数用尽仍被截断 → 挂"继续生成"药丸 */
-  try{await dbPut('chatMessages',am)}catch(e){toast('回复保存失败')}
+  if(ctx?.rhythm&&(ctx.signal?.aborted||!ctx.sameConv()))throw new DOMException('Cancelled','AbortError');
+  try{await dbPut('chatMessages',am)}catch(e){if(ctx?.rhythm)throw e;toast('回复保存失败')}
+  window.IBChatRhythm?.observe(cfg,th,am);
+  if(!ctx?.rhythm)window.IBChatRhythm?.settle(cfg,th,ctx?.myMsgs||_msgs);
   const live=ctx?ctx.sameConv():true;
   if(live){_msgs.push(am)}else if(ctx&&ctx.myMsgs)ctx.myMsgs.push(am);
   if(live&&aiEl&&aiEl.isConnected){aiEl.replaceWith(buildMsgEl(am));try{_tmCollapseAll()}catch(e){}}/* v97-m 任务3 */
@@ -9924,6 +9948,7 @@ async function _appendWorkspaceStepM(cfg,rootAm,text,usage){
 }
 async function _runToolLoopStateM(st){
   while(st.guard<Math.max(4,(st.wsMode?st.wsCap:st.toolCap)+4)){
+    if(st.ctx.rhythmTurn&&!st.ctx.sameConv()){_wsLoopStateM.delete(st.rootAm.id);return}
     if(st.signal&&st.signal.aborted){st.waitingConfirm=false;_wsLoopStateM.delete(st.rootAm.id);return}
     try{const p0=st.lastAm&&_toolPW.get(st.lastAm);if(p0)await p0}catch(e){}try{const p1=st.lastAm&&_ibPW.get(st.lastAm);if(p1)await p1}catch(e){}
     const _rsAll=((st.lastAm&&st.lastAm.wsResults)||[]);
@@ -9945,13 +9970,20 @@ async function _runToolLoopStateM(st){
     st.h=st.h.concat([{role:'assistant',content:st.stepTxt},{role:'user',content:'［系统：以下为你刚才调用的工具/数据结果，请据此继续当前任务；仍可继续调用，但不要重复相同参数的调用。］'}]);
     var _gq9T=null;const _fed9=await feedToolResults(st.h,st.cfg,[st.rootAm,st.lastAm]);/* fix-m①：取回执 */
     try{if(_gwFeedQ.length){const _gq9=_gwFeedQ.filter(x=>x.fid===st.cfg.id);_gwFeedQ=_gwFeedQ.filter(x=>x.fid!==st.cfg.id);_gq9T=_gq9;/* fix-m① */if(_gq9.length){for(let j9=st.h.length-1;j9>=0;j9--){if(st.h[j9].role==='user'){st.h[j9].content+='\n\n【调取结果】\n'+_gq9.map(x=>x.text).join('\n');break}}}}}catch(e){}/* v124-p：#1 出队注入续答轮（user 位）；已出队条目不会再走下一条消息的 tails 径，无重复 */
-    let t2='',u2=null;try{const r2=await callAIC(st.cfg,st.h,st.sys,()=>{},st.signal||null,st.pa);t2=(r2&&r2.t)||'';u2=(r2&&r2.u)||null}catch(e){if(e&&e.name==='AbortError'){try{toast('已停止')}catch(e9){}}try{if(_fed9)_fed9.restore()}catch(e9){}try{if(_gq9T&&_gq9T.length)_gwFeedQ=_gq9T.concat(_gwFeedQ)}catch(e9){}break}
+    let t2='',u2=null;try{const r2=await callAIC(st.cfg,st.h,st.wsMode&&st.ctx.rhythmTurn?st.sys.replace('\n\n'+IBReplyRhythm.protocol,''):st.sys,()=>{},st.signal||null,st.pa);t2=(r2&&r2.t)||'';u2=(r2&&r2.u)||null}catch(e){if(e&&e.name==='AbortError'){try{toast('已停止')}catch(e9){}}try{if(_fed9)_fed9.restore()}catch(e9){}try{if(_gq9T&&_gq9T.length)_gwFeedQ=_gq9T.concat(_gwFeedQ)}catch(e9){}break}
     if(!t2.trim()){try{if(_fed9)_fed9.restore()}catch(e9){}try{if(_gq9T&&_gq9T.length)_gwFeedQ=_gq9T.concat(_gwFeedQ)}catch(e9){}break}
+    if(st.ctx.rhythmTurn&&(st.signal?.aborted||!st.ctx.sameConv())){try{_fed9?.restore()}catch(e){}if(_gq9T?.length)_gwFeedQ=_gq9T.concat(_gwFeedQ);break}
     if(_fed9){try{_fed9.commit().catch(function(){})}catch(e9){}}/* fix-m①：本轮续答送达且有效，结果落“已回传”标 */
     if(st.wsMode){
       /* 工作区任务：后台可多次请求模型，但对用户只维护一个 AI 气泡/一条数据库消息。 */
       await _appendWorkspaceStepM(st.cfg,st.rootAm,t2,u2);
       st.lastAm=st.rootAm;
+    }else if(st.ctx.rhythmTurn){
+      const turn=st.ctx.rhythmTurn;
+      const parts=await IBReplyRhythm.deliver(turn,t2,async(text,index)=>{
+        const slot=document.createElement('div');convEl('cv-msgs').appendChild(slot);
+        try{st.lastAm=await saveAi(st.cfg,text,'',slot,{...st.ctx,rhythm:true,replyBatch:{key:turn.key,ids:turn.ids},usage:index===0?u2:null})}catch(e){slot.remove();throw e}
+      },{active:st.ctx.sameConv});t2=parts.join('\n\n');
     }else{
       const am2=await saveAi(st.cfg,t2,'',null,Object.assign({},st.ctx,{usage:u2}));
       try{if(st.ctx.sameConv()&&am2){const host=convEl('cv-msgs');if(host){host.appendChild(buildMsgEl(am2));pinBottom()}}}catch(e){}
@@ -10932,21 +10964,24 @@ function _gAutoAfter(pcfg,g,members,sil,opt,ac){if(!g||!g.autoTalk)return;if(opt
   _gAuto.timer=setTimeout(fire,2200+Math.random()*1800)}
 async function genReplyGroup(pcfg,opt){
   const g=pcfg._group;if(!g)return;
+  const manualCtx=opt?.rhythm,manual=manualCtx?.rhythmTurn;
+  const myThread=manualCtx?manualCtx.thread||null:_activeThread;
+  const source=manualCtx?.messages||_msgs.slice();
   if(_sendKeys.has(_keyOf(pcfg.id,_activeThread?_activeThread.id:'')))return;
   await loadCfgs();
   const members=(g.members||[]).map(id=>_cfgs.find(c=>c.id===id)).filter(Boolean);
   if(!members.length){toast('群里没有有效成员');return}
   const sil=new Set(g.mentionOnly||[]);
-  const lastU=[..._msgs].reverse().find(m=>m.role==='user');
-  const lastTxt=lastU?(lastU.content||''):'';
-  const speaking=_gPickSpeakersM(g,members,sil,lastTxt,_msgs,opt);/* 手机端：导演模式调度 */
+  if(manual&&!manualCtx.active())return;
+  const lastU=[...source].reverse().find(m=>m.role==='user');
+  const lastTxt=manual?source.filter(m=>manual.ids.includes(m.id)).map(m=>m.content||'').join('\n'):(lastU?(lastU.content||''):'');
+  const speaking=_gPickSpeakersM(g,members,sil,lastTxt,source,opt);/* 手机端：导演模式调度 */
   if(!speaking.length){if(!(opt&&opt.only))toast('成员都在静默模式且没有被 @，本轮无人回应');return}
-  const myThread=_activeThread;
   const myKey=_keyOf(pcfg.id,myThread?myThread.id:'');
   if(_sendKeys.has(myKey))return;
   _sendKeys.add(myKey);
-  const myAc=new AbortController();_acMap[myKey]=myAc;
-  const sameConvG=()=>!!_activeCfg&&_activeCfg.id===pcfg.id&&((_activeThread?_activeThread.id:'')===(myThread?myThread.id:''));
+  const myAc=manual?.controller||new AbortController();_acMap[myKey]=myAc;
+  const sameConvG=manualCtx?.active||(()=>!!_activeCfg&&_activeCfg.id===pcfg.id&&((_activeThread?_activeThread.id:'')===(myThread?myThread.id:'')));
   _sending=true;sendBtnState(true);_ac=myAc;
   const box=convEl('cv-msgs');
   let about=null;try{about=await loadAbout()}catch(e){}/* v59-m t19：锁已上，任何 await 抛错都不能把锁留在集合里 */
@@ -10964,7 +10999,7 @@ async function genReplyGroup(pcfg,opt){
   const roundExtras=[];
   try{
     for(const cfg of speaking){
-      if(_ac.signal.aborted)break;
+      if(myAc.signal.aborted||(manual&&!sameConvG()))break;
       const selfName=cfgName(cfg);
       if(!cfg.apiKey){toast(selfName+'：未配置 Key，跳过');continue}
       const _tp=buildTypingRow(selfName,_pfAvatar(cfg));
@@ -10972,7 +11007,7 @@ async function genReplyGroup(pcfg,opt){
       box.appendChild(aiEl);box.scrollTop=box.scrollHeight;
       const txtEl=_tp.txtEl,thWrap=_tp.thWrap,thEl=_tp.thEl,_bub=_tp.bubble;
       let accT='',accK='';let _gqGT=null;/* fix-m① */
-      const onDelta=(t,k)=>{accT=t;accK=k;try{if(window._IBCALL)window._IBCALL._onDelta(pcfg,t,cfg)}catch(e){}
+      const onDelta=(t,k)=>{accT=t;accK=k;if(manual)return;try{if(window._IBCALL)window._IBCALL._onDelta(pcfg,t,cfg)}catch(e){}
         if(!aiEl.isConnected)return;
         if(k&&thWrap.style.display==='none')thWrap.style.display='';
         if(k)thEl.textContent=k;
@@ -10980,10 +11015,11 @@ async function genReplyGroup(pcfg,opt){
         const nb=box.scrollHeight-box.scrollTop-box.clientHeight<160;if(nb)box.scrollTop=box.scrollHeight;
       };
       try{
-        const keep=(ss.enabled&&ss.summaryScope!=='ctx')?(ss.keepCount||6):((mpAi(cfg).grpLimit)||30);/* 手机端：覆盖范围 ctx＝群聊原文仍按该成员的群聊上下文条数 *//* v61-m t1：按发言 AI 的独立配置截取群聊历史（原硬编码 30），与电脑端全局 readingLimits 互不读写 */
-        let _gSrc9=_msgs;
-        try{const _gh9=await _apiHistSrcM(pcfg.id,myThread?myThread.id:null,keep);
-          if(_gh9&&_gh9.length&&_msgs.length&&_gh9[_gh9.length-1].id===_msgs[_msgs.length-1].id)_gSrc9=_gh9;
+        const batchStart=manual?source.findIndex(m=>manual.ids.includes(m.id)):-1;
+        const keep=Math.max((ss.enabled&&ss.summaryScope!=='ctx')?(ss.keepCount||6):((mpAi(cfg).grpLimit)||30),batchStart>=0?source.length-batchStart:0);
+        let _gSrc9=source;
+        try{const _gh9=manual?null:await _apiHistSrcM(pcfg.id,myThread?myThread.id:null,keep);
+          if(_gh9&&_gh9.length&&source.length&&_gh9[_gh9.length-1].id===source[source.length-1].id)_gSrc9=_gh9;
         }catch(e){}
         const history=_cacheStableSliceM(_gSrc9.filter(m=>!(m&&m.callFold)),keep);
         const _hIds9=new Set(history.map(m=>m&&m.id));const _hLast9=history.length?(history[history.length-1].timestamp||0):0;
@@ -11045,29 +11081,35 @@ async function genReplyGroup(pcfg,opt){
         /* v89-m：群聊联网搜索边界已按用户决定移除 */
         try{if(window._IBCALL&&_IBCALL.active&&_IBCALL.active()){const _clSg=await loadCALL();if(_clSg&&_clSg.on!==false){sysContent+=_CALL_INSTR_BLOCK;if(_IBCALL.vid&&_IBCALL.vid())sysContent+=_VID_INSTR_BLOCK+(_noVisionM(cfg)?_VID_NOVIS_NOTE:'')}}}catch(e){}/* 手机端：群通话进行中注入通话协议段（与 1对1 同一份常量块，随开打 / 挂断整块起挂） */
         sysContent+=_SYS_SPLIT_M+((amBlock&&amBlock.stable)?'\n\n'+amBlock.stable:'')+_IB_PERSONA_LOCK;/* v87-m 人格收束（群聊） *//* 第二块（档案核心 + 人格收束） */
-        const r=await callAIC(gc,messages,sysContent,onDelta,myAc.signal,pa);/* v61-m t9：接入自动续写 */
+        const r=await callAIC(gc,messages,sysContent+(manual?'\n\n'+IBReplyRhythm.protocol:''),onDelta,myAc.signal,pa);/* v61-m t9：接入自动续写 */
         var _gFin=r.fin||'';
         accT=sanitizeGroupReply(r.t,selfName);accK=r.k;
         accT=String(accT||'').replace(/<ws_pass\b[^>]*\/?>/gi,'').trim();
         if(!accT.trim()){aiEl.remove();try{if(_gqGT&&_gqGT.length){_gwFeedQ=_gqGT.concat(_gwFeedQ)}}catch(e9){}_gqGT=null;continue}
         _gqGT=null;/* fix-m①：本成员请求已送达且有效 */
-        const am={id:'msg_'+Date.now()+'_'+Math.floor(Math.random()*100000),role:'assistant',content:accT,
-          friendId:g.id,senderId:cfg.id,senderName:selfName,timestamp:Date.now()};
+        const saveOne=async(text,index)=>{
+        const stamp=manual?IBReplyRhythm.stamp():Date.now();
+        const am={id:'msg_'+stamp+'_'+crypto.randomUUID(),role:'assistant',content:text,
+          friendId:g.id,senderId:cfg.id,senderName:selfName,timestamp:stamp};
+        am.replyBatch={key:manual?.key||'chat:'+JSON.stringify([pcfg.id,myThread?.id||'']),ids:manual?.ids||source.filter(m=>m.role==='user').map(m=>m.id)};
         if(accK&&accK.trim())am.thinking=accK;
         if(_finTruncM(_gFin))am.truncated=true;/* v65-m：群聊同样挂"继续生成"药丸 */
         if(opt&&opt.idle){am.proactive=true;am.idleFire=1}/* 手机端 */
-        try{await dbPut('chatMessages',am)}catch(e){toast('回复保存失败')}
-        _msgs.push(am);
-        aiEl.replaceWith(buildMsgEl(am));
+        try{await dbPut('chatMessages',am)}catch(e){if(manual)throw e;toast('回复保存失败')}
+        window.IBChatRhythm?.observe(pcfg,myThread,am);
+        if(!manual)window.IBChatRhythm?.settle(pcfg,myThread,source);
+        if(sameConvG()){_msgs.push(am);if(manual)box.appendChild(buildMsgEl(am));else aiEl.replaceWith(buildMsgEl(am))}
   try{_tmCollapseAll()}catch(e){}/* v97-m 任务3 */
         try{if(window._IBCALL)window._IBCALL._onAiMsg(pcfg,am,cfg)}catch(e){}
         try{if(window.IBApps)IBApps._emit('message',am)}catch(e){}/* v189-p：向打开中的桌面 APP 派发成员的新消息 */
         roundExtras.push(am);
         Promise.resolve(procMemOps(cfg,am)).catch(()=>{}).then(()=>procIbOps(cfg,am)).catch(()=>{});
+        };
+        if(manual){aiEl.remove();await IBReplyRhythm.deliver(manual,accT,saveOne,{active:sameConvG})}else await saveOne(accT,0);
       }catch(err){
         try{if(_gqGT&&_gqGT.length){_gwFeedQ=_gqGT.concat(_gwFeedQ);_gqGT=null}}catch(e9){}/* fix-m①：本成员请求未送达→调取结果放回 */
         if(err&&err.name==='AbortError'){
-          if(accT.trim()){
+          if(!manual&&accT.trim()){
             const am={id:'msg_'+Date.now()+'_'+Math.floor(Math.random()*100000),role:'assistant',content:sanitizeGroupReply(accT,selfName),friendId:g.id,senderId:cfg.id,senderName:selfName,timestamp:Date.now()};
             try{await dbPut('chatMessages',am)}catch(e){}
             if(_activeCfg&&_activeCfg.id===pcfg.id){_msgs.push(am);aiEl.replaceWith(buildMsgEl(am))}else{if(aiEl.isConnected)aiEl.remove()}
@@ -11083,7 +11125,7 @@ async function genReplyGroup(pcfg,opt){
     try{window._ibAppTailM=null}catch(e){}/* v189-p：APP 隐藏上下文一轮即焚 */
     _sendKeys.delete(myKey);delete _acMap[myKey];
     if(sameConvG()){_sending=false;sendBtnState(false);_ac=null;pinBottom()}
-    try{_gAutoAfter(pcfg,g,members,sil,opt,myAc)}catch(e){}/* v250-p：一轮收尾后安排下一轮自动发言 */
+    if(!manual)try{_gAutoAfter(pcfg,g,members,sil,opt,myAc)}catch(e){}/* Manual receive never schedules another automatic turn. */
     setTimeout(()=>{
       const util=pickGroupUtilCfg(g);
       if(util)maybeSummarizeM(Object.assign({},util,{id:g.id,sealTimestamp:0,_sumMember:util.id}),null).catch(()=>{});/* 手机端：带上执笔成员 id，ctx 模式按其群聊上下文条数取保留数 */
@@ -14787,11 +14829,11 @@ async function sendQuickText(t,extra){/* 复用 sendMsg 主干：不动输入框
 /* ── 语音消息：入库、请求文本格式对齐电脑端、气泡内播放 ── */
 async function sendVoiceMsg(v){
   const cfg=_activeCfg;if(!cfg)return;
-  if(_sendKeys.has(_convKey(cfg))){toast('等这条回复完成，或先停止');return}
-  if(!cfg.apiKey&&!cfg._group){toast('这个配置还没有 API Key，请到 API 页填写');return}
-  const um={id:'msg_'+Date.now()+'_u',role:'user',content:'',voice:{dataUrl:v.dataUrl,mime:v.mime,duration:v.duration,transcript:v.transcript||'',tone:v.tone||''},friendId:cfg.id,timestamp:Date.now()};/* v149-p：#1 +tone（本地声学语气，定格随消息） */
+  const thread=_activeThread,stamp=IBReplyRhythm.stamp();
+  const um={id:'msg_'+stamp+'_'+crypto.randomUUID(),role:'user',content:'',voice:{dataUrl:v.dataUrl,mime:v.mime,duration:v.duration,transcript:v.transcript||'',tone:v.tone||''},friendId:cfg.id,timestamp:stamp};/* v149-p：#1 +tone（本地声学语气，定格随消息） */
   if(_activeThread)um.threadId=_activeThread.id;
-  try{await dbPut('chatMessages',um)}catch(e){toast('本地保存失败');return}
+  try{await window.IBChatRhythm.saveUser(cfg,thread,um)}catch(e){toast('本地保存失败');return}
+  if(_activeCfg?.id!==cfg.id||(_activeThread?.id||'')!==(thread?.id||''))return;
   /* v194-p：语音消息不再自动进收藏夹（只手动收藏）*//* v190-p：语音消息自动进收藏夹 */
   _presTouch();
   _msgs.push(um);
@@ -14800,7 +14842,7 @@ async function sendVoiceMsg(v){
   box.appendChild(buildMsgEl(um,_msgs[_msgs.length-2]||null));
   try{_tmCollapseAll()}catch(e){}/* v97-m 任务3 */
   box.scrollTop=box.scrollHeight;
-  if(cfg._group){try{_gAutoReset(cfg)}catch(e){}genReplyGroup(cfg)}else genReply(cfg);/* v250-p：用户开口＝自动发言重新计数 */
+  window.IBChatRhythm.paint();
 }
 function _voiceApiLine(v){var d=Math.max(1,Math.round((v&&v.duration)||1));var t=((v&&v.transcript)||'').trim();var tn=(v&&v.tone)?('｜声学语气参考: '+v.tone):'';return '“'+String((typeof _about!=='undefined'&&_about&&_about.name)||'用户')+'”发了一条语音条：[语音消息 '+d+'秒'+tn+'] '+(t||'（语音内容未能自动识别）')}/* v293-p：API 副本写明是谁发的语音条（含语音消息的会话冷启动重建一次缓存） */
 
@@ -26695,6 +26737,7 @@ try{if(document.readyState==='loading')document.addEventListener('DOMContentLoad
 window._ibChatImp={open:open,read:read,parseText:parseText,run:run,undo:undo,hist:hist};
 })();
 </script>
+<script src="apps/ib-chat-reply-rhythm.js"></script>
 <!-- Temporary layout diagnostic: opt in with ?ib-layout-debug=1; no default load. -->
 <script>
 if(new URLSearchParams(location.search).get('ib-layout-debug')==='1'){

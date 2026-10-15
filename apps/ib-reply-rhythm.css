@@ -1,0 +1,5 @@
+#conv .cv-input #cv-receive{flex:0 0 44px;min-width:44px;min-height:44px;border:1px solid var(--glass-line);border-radius:50%;background:transparent;color:var(--tx2);font:20px/1 var(--sys);cursor:pointer}
+#conv .cv-input #cv-receive:disabled{opacity:.3;cursor:default}
+#conv .cv-input #cv-receive:focus-visible{outline:2px solid var(--tx2);outline-offset:2px}
+#music-app.tg-listen .tg-chat-composer .tg-receive{min-width:44px;min-height:44px;background:transparent;color:var(--tx2);font-size:20px}
+#music-app.tg-listen .tg-chat-composer .tg-receive:disabled{opacity:.3;cursor:default}

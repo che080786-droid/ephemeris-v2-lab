@@ -2,10 +2,18 @@ import {executeMusicAction,pendingInvitation} from './ib-music-actions.js';
 import {musicCard} from './ib-music-participation-cards.js';
 /* One Listen room, two views. Session UI state only; no playback or auth writes. */
 import {createAiAdapter,mockProvider,MOCK_CASES} from './ib-together-ai-adapter.js';
+import './ib-reply-rhythm.js';
+const rhythm=window.IBReplyRhythm;
 const sessions=new Map();
 const mockEnabled=()=>new URLSearchParams(location.search).get('ib-ai-mock')==='1';
 function roomKey(){return (typeof _mp!=='undefined'&&_mp?.musicAi?.mate)||'unpaired'}
-function session(key){if(!sessions.has(key))sessions.set(key,{mode:'music',messages:[],draft:'',scenario:'short',scrollTop:0});return sessions.get(key)}
+function session(key){if(!sessions.has(key)){
+  const storageKey='ib_listen_chat_session:'+key;let id=sessionStorage.getItem(storageKey);
+  if(!id){id=crypto.randomUUID();sessionStorage.setItem(storageKey,id)}
+  sessions.set(key,{id,mode:'music',messages:[],draft:'',scenario:'short',scrollTop:0,ready:false,saving:0});
+}return sessions.get(key)}
+function ensureHistory(owner){if(!owner.loading)owner.loading=(async()=>{const saved=await window.dbGet('apiSettings','listen_chat_v1:'+owner.id);if(!owner.messages.length&&saved?.messages)owner.messages=saved.messages;owner.ready=true})();return owner.loading}
+function saveHistory(owner){const messages=owner.messages.filter(m=>m.id&&!m.pending&&!m.error).map(m=>({...m}));owner.saves=(owner.saves||Promise.resolve()).catch(()=>{}).then(()=>window.dbPut('apiSettings',{id:'listen_chat_v1:'+owner.id,messages}));return owner.saves}
 function currentTrack(){return typeof _pw!=='undefined'?_pw.list?.[_pw.idx]:null}
 function context(player){const a=typeof _pw!=='undefined'?_pw.a:null,track=currentTrack();return {trackRecordId:track?.id||'',songTitle:track?.title||track?.name||'',artist:track?.artist||'',currentLyric:player.querySelector('.ma-ln.on')?.textContent||'',currentTime:a?.currentTime||0,connected:!!player.querySelector('#ma-duo .ma-duo2'),connectionKind:'native-companion-selected'}}
 export function mountListenRoom(player){
@@ -39,6 +47,37 @@ export function mountListenRoom(player){
     +'<form class="tg-chat-composer"><textarea rows="1" maxlength="2000" aria-label="留下一段感受" placeholder="说说这首歌，或此刻的心情…"></textarea><button type="submit" aria-label="发送">发送</button></form>';
   stage.appendChild(chat);
   const list=chat.querySelector('.tg-message-list'),input=chat.querySelector('textarea'),form=chat.querySelector('form');
+  const receive=document.createElement('button');receive.type='button';receive.className='tg-receive';receive.setAttribute('aria-label','收取回复');receive.title='让晏景回复';form.appendChild(receive);
+  let unsubscribe=null;
+  const replyKey=()=> 'listen:'+JSON.stringify([key,state.id]);
+  const history=owner=>owner.messages.filter(m=>!m.pending&&!m.error).map(m=>({id:m.id,role:m.author==='me'?'user':'assistant',content:m.text,timestamp:m.timestamp,replyBatch:m.replyBatch}));
+  function paintReceive(){rhythm.paint(receive,replyKey(),{blocked:!state.ready||state.saving>0})}
+  function setupRhythm(){
+    unsubscribe?.();const owner=state,rk=replyKey();receive.disabled=true;
+    ensureHistory(owner).then(()=>{rhythm.seed(rk,history(owner),{persistent:true});if(disposed||state!==owner)return;unsubscribe=rhythm.subscribe(rk,paintReceive);paintReceive();renderMessages()}).catch(()=>window.toast?.('房间消息读取失败，请稍后重试'));
+  }
+  receive.addEventListener('click',async()=>{
+    const owner=state,ownerKey=key,rk=replyKey();if(rhythm.get(rk).turn){rhythm.stop(rk);return}
+    const cfg=(typeof _cfgs!=='undefined'?_cfgs:[]).find(c=>c.id===ownerKey&&!c._group);
+    if(!mockEnabled()&&!cfg?.apiKey){window.toast?.('请先选择已配置 API 的共听伙伴');return}
+    const messages=history(owner),scene={...context(player),scene:'Together / Listen Together',playbackState:typeof _pw!=='undefined'&&_pw.a&&!_pw.a.paused?'playing':'paused',mate:{id:ownerKey,name:names().mate},roomSession:owner.id};
+    const active=()=>!disposed&&owner===state;
+    try{await rhythm.run(rk,async turn=>{
+      const save=async text=>{
+        await (owner.saves||Promise.resolve()).catch(()=>{});
+        if(turn.signal.aborted||!active())throw new DOMException('Cancelled','AbortError');
+        const message={id:'msg_'+crypto.randomUUID(),timestamp:rhythm.stamp(),author:'mate',text,replyBatch:{key:turn.key,ids:turn.ids}};owner.messages.push(message);
+        try{await saveHistory(owner)}catch(e){owner.messages.splice(owner.messages.indexOf(message),1);throw e}
+        if(active())renderMessages(true);
+      };
+      if(mockEnabled()){
+        const response=await adapter.respond({...scene,batch:messages.filter(m=>turn.ids.includes(m.id))},{scenario:owner.scenario,signal:turn.signal});
+        await rhythm.deliver(turn,response.text,save,{active});
+      }else await window.genReply(cfg,{rhythmTurn:turn,room:true,key:rk,thread:null,messages,active,save,
+        systemContext:'【内部场景上下文，非用户发言】\n'+JSON.stringify(scene),
+        error:()=>window.toast?.('暂时没有收到回复，请再次收取重试')});
+    })}catch(e){if(e.name!=='AbortError'&&active())window.toast?.('暂时没有收到回复，请再次收取重试')}
+  });
   const modes=document.createElement('div');modes.className='tg-room-modes';modes.setAttribute('role','group');modes.setAttribute('aria-label','一起听模式');
   modes.innerHTML='<button type="button" data-view="music">音乐</button><button type="button" data-view="chat">对话</button>';player.appendChild(modes);
   const nativeObserver=new MutationObserver(refreshContext);
@@ -66,7 +105,7 @@ export function mountListenRoom(player){
   }
   function refreshContext(){
     if(disposed)return;
-    const nextKey=roomKey();if(key!==nextKey){cancelPending();key=nextKey;state=session(key);input.value=state.draft;renderMessages();setMode(state.mode)}
+    const nextKey=roomKey();if(key!==nextKey){cancelPending();key=nextKey;state=session(key);setupRhythm();input.value=state.draft;renderMessages();setMode(state.mode)}
     const paired=!!player.querySelector('#ma-duo .ma-duo2'),n=names();
     paintPair();identity.classList.toggle('is-paired',paired);
     identity.setAttribute('aria-label',n.me+' × '+n.mate+'，'+(paired?'共听伙伴与状态':'选择共听伙伴'));
@@ -99,10 +138,12 @@ export function mountListenRoom(player){
     if(bottom)scrollBottom();else list.scrollTop=state.scrollTop;
   }
   function cancelPending(){
+    rhythm.stop(replyKey());
     controller?.abort();controller=null;
     for(const message of state.messages)if(message.pending){message.pending=false;message.error=true;message.text='这条回应暂时没有到达。'}
   }
-  async function requestReply(scenario=state.scenario,inviteId){
+  // Explicit developer action previews only; neither composer nor production calls this path.
+  async function requestMockPreview(scenario=state.scenario,inviteId){
     if(!mockEnabled()||disposed)return;
     cancelPending();controller=new AbortController();const signal=controller.signal,owner=state;
     const message={author:'mate',text:'',pending:true};owner.messages.push(message);renderMessages(true);
@@ -137,9 +178,12 @@ export function mountListenRoom(player){
   list.addEventListener('scroll',()=>{if(state.mode==='chat')state.scrollTop=list.scrollTop});
   input.addEventListener('input',()=>{state.draft=input.value;input.style.height='auto';input.style.height=Math.min(input.scrollHeight,96)+'px'});
   input.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing&&event.keyCode!==229){event.preventDefault();form.requestSubmit()}});
-  form.addEventListener('submit',event=>{
+  form.addEventListener('submit',async event=>{
     event.preventDefault();const value=input.value.trim();if(!value)return;
-    state.messages.push({author:'me',text:value});state.draft='';input.value='';input.style.height='';renderMessages(true);requestReply();
+    const owner=state,rk=replyKey(),message={id:'msg_'+crypto.randomUUID(),timestamp:rhythm.stamp(),author:'me',text:value};owner.draft='';input.value='';input.style.height='';owner.saving++;paintReceive();
+    try{await ensureHistory(owner);owner.messages.push(message);if(owner===state)renderMessages(true);await saveHistory(owner);rhythm.enqueue(rk,message)}
+    catch(e){const index=owner.messages.indexOf(message);if(index>=0)owner.messages.splice(index,1);if(owner===state){renderMessages();if(!input.value)input.value=value}window.toast?.('房间消息保存失败，请重试')}
+    finally{owner.saving--;if(owner===state)paintReceive()}
   });
   // iOS visual viewport: resize only the room UI when the software keyboard opens.
   const viewport=window.visualViewport;
@@ -147,18 +191,18 @@ export function mountListenRoom(player){
   viewport?.addEventListener('resize',keyboard);viewport?.addEventListener('scroll',keyboard);input.addEventListener('focus',keyboard);input.addEventListener('blur',keyboard);
   window.addEventListener('ib-music-invitation-change',invitationChanged);
   function invitationChanged(){if(!disposed)renderMessages()}
-  input.value=state.draft;renderMessages();refreshContext();setMode(state.mode);
+  setupRhythm();input.value=state.draft;renderMessages();refreshContext();setMode(state.mode);
   return {
     setMode,
     mockCases:mockEnabled()?MOCK_CASES:[],
     async preview(scenario){
       state.scenario=scenario;setMode('chat');
       if(['accept','decline','loading','error'].includes(scenario)){
-        try{const pending=pendingInvitation(actionContext().conversationKey);const result=pending?{kind:'invitation',id:pending.id}:await executeMusicAction({type:'invite_listen_together',actor:'mingyue'},actionContext());if(!pending)state.messages.push({author:'me',text:'要不要一起听歌？',results:[result]});requestReply(scenario,result.id)}catch(e){state.messages.push({author:'me',text:'邀请暂时没有发出。'});renderMessages(true)}
-      }else requestReply(scenario);
+        try{const pending=pendingInvitation(actionContext().conversationKey);const result=pending?{kind:'invitation',id:pending.id}:await executeMusicAction({type:'invite_listen_together',actor:'mingyue'},actionContext());if(!pending)state.messages.push({author:'me',text:'要不要一起听歌？',results:[result]});requestMockPreview(scenario,result.id)}catch(e){state.messages.push({author:'me',text:'邀请暂时没有发出。'});renderMessages(true)}
+      }else requestMockPreview(scenario);
     },
     dispose(){
-      if(disposed)return;state.draft=input.value;cancelPending();disposed=true;
+      if(disposed)return;state.draft=input.value;cancelPending();disposed=true;unsubscribe?.();
       window.removeEventListener('ib-music-invitation-change',invitationChanged);nativeObserver.disconnect();viewport?.removeEventListener('resize',keyboard);viewport?.removeEventListener('scroll',keyboard);
       body.inert=false;foot.inert=false;body.removeAttribute('aria-hidden');foot.removeAttribute('aria-hidden');
       stage.insertAdjacentElement('beforebegin',body);stage.remove();identity.remove();modes.remove();title.textContent=oldTitle;
