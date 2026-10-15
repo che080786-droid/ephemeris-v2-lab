@@ -4247,6 +4247,7 @@ self.addEventListener(&#x27;fetch&#x27;,function(e){
   <div id="toast"></div>
 <link rel="stylesheet" href="apps/ib-reply-rhythm.css">
 <link rel="stylesheet" href="apps/ib-chat-attachments.css">
+<script src="apps/ib-chat-reply-style.js"></script>
 <script src="apps/ib-reply-rhythm.js"></script>
 <script></script><script>
 'use strict';
@@ -9534,7 +9535,7 @@ async function genReply(cfg,internalCtx){
     /* v89-m：联网搜索使用边界已按用户决定移除（不再注入任何"何时不该搜"说明） */
     try{if(window._ibAppSysM&&window._ibAppSysM.text&&(!window._ibAppSysM.cfgId||window._ibAppSysM.cfgId===cfg.id))parts.push(String(window._ibAppSysM.text).slice(0,4000))}catch(e){}/* v189-p：桌面 APP 常驻说明（随 ctx.sys.set 整块进 System，切换即重建一次缓存） */
       parts.push(_SYS_SPLIT_M+((amBlock&&amBlock.stable)?amBlock.stable+'\n\n':'')+_IB_PERSONA_LOCK.replace(/^\n+/,''));/* v87-m 人格收束：System 末尾固定说明 *//* 分隔符之后＝第二块（档案核心 + 人格收束），Anthropic 单独一个断点 */
-    const sys=parts.filter(Boolean).join('\n\n')+(internalCtx?.systemContext?'\n\n'+internalCtx.systemContext:'')+(manual?'\n\n'+IBReplyRhythm.protocol:'');
+    const sys=parts.filter(Boolean).join('\n\n')+(internalCtx?.systemContext?'\n\n'+internalCtx.systemContext:'')+(manual?'\n\n'+IBReplyRhythm.protocol:'')+(window.IBChatReplyStyle?.forConfig(cfg)?'\n\n'+IBChatReplyStyle.forConfig(cfg):'');
     let _sumText=null,_ssM=null;
     try{_ssM=await getSummarySettingsM();
       if(_ssM.enabled){const ex=await getChatSummaryM(cfg,myThread?myThread.id:null);if(ex)_sumText=ex.summary}
@@ -11079,7 +11080,7 @@ async function genReplyGroup(pcfg,opt){
         /* v89-m：群聊联网搜索边界已按用户决定移除 */
         try{if(window._IBCALL&&_IBCALL.active&&_IBCALL.active()){const _clSg=await loadCALL();if(_clSg&&_clSg.on!==false){sysContent+=_CALL_INSTR_BLOCK;if(_IBCALL.vid&&_IBCALL.vid())sysContent+=_VID_INSTR_BLOCK+(_noVisionM(cfg)?_VID_NOVIS_NOTE:'')}}}catch(e){}/* 手机端：群通话进行中注入通话协议段（与 1对1 同一份常量块，随开打 / 挂断整块起挂） */
         sysContent+=_SYS_SPLIT_M+((amBlock&&amBlock.stable)?'\n\n'+amBlock.stable:'')+_IB_PERSONA_LOCK;/* v87-m 人格收束（群聊） *//* 第二块（档案核心 + 人格收束） */
-        const r=await callAIC(gc,messages,sysContent+(manual?'\n\n'+IBReplyRhythm.protocol:''),onDelta,myAc.signal,pa);/* v61-m t9：接入自动续写 */
+        const r=await callAIC(gc,messages,sysContent+(manual?'\n\n'+IBReplyRhythm.protocol:'')+(window.IBChatReplyStyle?.forConfig(cfg)?'\n\n'+IBChatReplyStyle.forConfig(cfg):''),onDelta,myAc.signal,pa);/* v61-m t9：接入自动续写 */
         var _gFin=r.fin||'';
         accT=sanitizeGroupReply(r.t,selfName);accK=r.k;
         accT=String(accT||'').replace(/<ws_pass\b[^>]*\/?>/gi,'').trim();
@@ -26735,6 +26736,8 @@ try{if(document.readyState==='loading')document.addEventListener('DOMContentLoad
 window._ibChatImp={open:open,read:read,parseText:parseText,run:run,undo:undo,hist:hist};
 })();
 </script>
+<link rel="stylesheet" href="apps/ib-home.css">
+<script src="apps/ib-home.js"></script>
 <script src="apps/ib-chat-reply-rhythm.js"></script>
 <script src="apps/ib-chat-attachments.js"></script>
 <!-- Temporary layout diagnostic: opt in with ?ib-layout-debug=1; no default load. -->

@@ -82,6 +82,9 @@ with sync_playwright() as p:
     assert '默认优先像微信聊天一样回复成 2～4 个独立气泡' in sent
     assert '只有非常短、单一语义的回复才使用单条' in sent
     assert '每条尽量只有 1 句话' in sent
+    for rule in ['【聊天标点与句式】','少用句号、逗号、分号、冒号','句号可以自然表达情绪','保留代码、链接、工具标签','与用户自己填写的 System Prompt 并存']: assert rule in sent,rule
+    assert page.evaluate('async()=>(await dbGet("apiConfigs","rhythm")).systemPrompt')=='PERSONA_KEEP'
+    assert sent.index('【本轮聊天回复格式 · 多气泡】') < sent.index('【聊天标点与句式】')
     assert '我陪你慢慢缓一会儿。' in sent
     send('NEXT_ROUND_C')
     expect(page.locator('#cv-ta')).to_be_enabled()
@@ -163,6 +166,7 @@ with sync_playwright() as p:
     page.evaluate('async(t)=>dbPut("chatThreads",t)', thread)
     open_chat(thread=thread);expect(page.locator('#cv-receive')).to_be_disabled();send('THREAD_ONLY_PENDING')
     open_chat('other');expect(page.locator('#cv-receive')).to_be_disabled();send('OTHER_ONLY_PENDING')
+    assert page.evaluate('()=>IBChatReplyStyle.forConfig(_cfgs.find(c=>c.id==="other"))')==''
     open_chat(thread=thread)
     output['value'] = 'hold'
     expected=len(requests)+1
@@ -221,6 +225,7 @@ with sync_playwright() as p:
     sent=json.dumps(requests[-1],ensure_ascii=False)
     for marker in ['ROOM_BATCH_A','ROOM_BATCH_B','歌曲上下文','歌手上下文','Together / Listen Together','currentLyric','currentTime','playing','mate','PERSONA_KEEP']:assert marker in sent,marker
     assert '默认优先像微信聊天一样回复成 2～4 个独立气泡' in sent
+    assert '【聊天标点与句式】' in sent and 'PERSONA_KEEP' in sent
     assert sent.index('Together / Listen Together') < sent.index('【本轮聊天回复格式 · 多气泡】')
     for marker in ['ROOM_NEXT_ROUND','OTHER_ONLY_PENDING','MAIN_ONLY_PENDING']:assert marker not in sent
     time_before=page.evaluate('()=>_pw.a.currentTime')

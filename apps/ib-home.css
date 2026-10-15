@@ -1,0 +1,50 @@
+/* Scoped to the existing Home / Desk section; all colours follow IB's theme. */
+#sec-profile-cal[data-home-view="home"] > :not(.our-home):not(.our-home-switch){display:none!important}
+#sec-profile-cal[data-home-view="desk"] > .our-home{display:none}
+.our-home-switch{display:flex;gap:20px;padding:4px 12px 12px}
+.our-home-switch button{font:inherit;font-size:.72rem;color:var(--tx2);border:0;border-bottom:1px solid transparent;background:none;padding:10px 0;cursor:pointer}
+.our-home-switch button[aria-pressed="true"]{color:var(--tx);border-color:currentColor}
+#our-home{max-width:620px;margin:0 auto;padding:12px max(18px,env(safe-area-inset-right)) calc(100px + var(--sab)) max(18px,env(safe-area-inset-left));color:var(--tx);overflow-wrap:anywhere}
+#our-home *{min-width:0}
+#our-home .oh-label{font:500 .63rem/1.5 var(--sans,sans-serif);letter-spacing:.19em;color:var(--tx2)}
+#our-home .oh-clock{text-align:center;padding:22px 0 38px}
+#our-home time{display:block;font:400 clamp(4rem,22vw,6.4rem)/1.12 var(--serif);letter-spacing:-.035em;font-variant-numeric:tabular-nums;white-space:nowrap;margin:10px 0 12px}
+#our-home .oh-phase{font-size:.65rem;letter-spacing:.2em;color:var(--tx2)}
+#our-home .oh-greeting{font:400 1.06rem/1.8 var(--serif);margin-top:18px}
+#our-home .oh-days{text-align:center;padding:28px 18px 26px;border:1px solid var(--line);border-radius:26px;background:var(--soft)}
+#our-home .oh-pair{display:flex;align-items:center;justify-content:center;gap:12px;margin:24px auto 12px;max-width:250px}
+#our-home .oh-person{flex:0 0 56px;text-align:center}
+#our-home .oh-avatar{width:56px;height:56px;border:1px solid var(--line);border-radius:50%;display:grid;place-items:center;font:1.3rem var(--serif);background-color:var(--soft);color:var(--tx2)}
+#our-home .oh-person small{display:block;font-size:.64rem;color:var(--tx2);margin-top:8px}
+#our-home .oh-heartbeat{width:100%;max-width:100px;color:var(--acc);overflow:visible;opacity:.55}
+#our-home .oh-heartbeat path{fill:none;stroke:currentColor;stroke-width:1;animation:oh-breathe 3.5s ease-in-out infinite}
+@keyframes oh-breathe{0%,100%{opacity:.35}45%{opacity:.7}55%{opacity:.45}}
+#our-home .oh-count{font:400 clamp(2rem,12vw,3.8rem)/1.3 var(--serif);margin:16px 0 8px}
+#our-home .oh-since{font-size:.67rem;color:var(--tx2);margin:9px 0 0}
+#our-home button{cursor:pointer;color:var(--tx);font-family:inherit}
+#our-home .oh-edit{border:0;background:none;color:var(--tx2);font-size:.68rem;min-height:44px;text-decoration:underline;text-underline-offset:4px}
+#our-home .oh-date-form{margin:12px 0 0;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center}
+#our-home .oh-date-form[hidden]{display:none}
+#our-home .oh-date-form label{width:100%;font-size:.72rem;color:var(--tx2)}
+#our-home input{max-width:100%;color:var(--tx);background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:10px;font:inherit;font-size:.8rem;min-height:44px}
+#our-home .oh-save{padding:10px 16px;min-height:44px;background:var(--soft);border:1px solid var(--line);border-radius:9px;font-size:.75rem}
+#our-home .oh-error{width:100%;font-size:.72rem;color:var(--danger)}
+#our-home .oh-today{padding:38px 4px 28px}
+#our-home .oh-phrase{font:400 1.25rem/1.8 var(--serif);margin-top:15px}
+#our-home .oh-source{font-size:.6rem;color:var(--tx2);margin-top:12px}
+#our-home .oh-now{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:4px 4px 30px;color:var(--tx2);font-size:.73rem}
+#our-home .oh-doors{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding-bottom:38px}
+#our-home .oh-door{border:0;border-top:1px solid var(--line);border-radius:0;background:none;text-align:left;padding:20px 4px 10px;min-height:92px}
+#our-home .oh-door b{display:block;font:400 1.6rem var(--serif);margin-bottom:10px}
+#our-home .oh-door span{font-size:.69rem;color:var(--tx2)}
+#our-home .oh-album-head{display:flex;align-items:center;justify-content:space-between}
+#our-home .oh-album-head h2{font:400 1.7rem var(--serif)}
+#our-home .oh-photos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:18px}
+#our-home .oh-photos .oh-photo{display:block;aspect-ratio:1;border-radius:13px;overflow:hidden;border:1px solid var(--line)}
+#our-home .oh-photos img{width:100%;height:100%;object-fit:cover;display:block}
+#our-home .oh-empty{font:400 .83rem/1.8 var(--serif);color:var(--tx2);padding:25px 0 12px}
+#our-home[data-phase="night"] .oh-clock{opacity:.9}
+#our-home button:focus-visible,.our-home-switch button:focus-visible,#our-home a:focus-visible{outline:2px solid var(--acc);outline-offset:4px}
+@media(prefers-reduced-motion:reduce){#our-home .oh-heartbeat path{animation:none;opacity:.55}}
+body.ib-reduce #our-home .oh-heartbeat path{animation:none;opacity:.55}
+@media(max-width:340px){#our-home{padding-left:12px;padding-right:12px}#our-home .oh-days{padding-left:12px;padding-right:12px}.our-home-switch{padding-left:12px}}
