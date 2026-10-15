@@ -79,6 +79,10 @@ with sync_playwright() as p:
     sent = json.dumps(requests[-1], ensure_ascii=False)
     assert sent.index('BATCH_ONE_A') < sent.index('BATCH_ONE_B')
     assert 'PERSONA_KEEP' in sent and 'messages' in sent
+    assert '默认优先像微信聊天一样回复成 2～4 个独立气泡' in sent
+    assert '只有非常短、单一语义的回复才使用单条' in sent
+    assert '每条尽量只有 1 句话' in sent
+    assert '我陪你慢慢缓一会儿。' in sent
     send('NEXT_ROUND_C')
     expect(page.locator('#cv-ta')).to_be_enabled()
     assert page.locator('#cv-send').inner_html() == original_send
@@ -134,6 +138,24 @@ with sync_playwright() as p:
     page.locator('#cv-receive').click();idle()
     for i in range(12): assert 'LONG_BATCH_'+str(i) in json.dumps(requests[-1])
     assert messages()[-1]['content'] == 'plain fallback reply'
+
+    # Model-selected semantic units, short replies, fence recovery and prose fallback
+    # all persist as independent assistant records via the real request/save path.
+    cases = [
+        ({'messages':['今天辛苦了。','我陪你缓一会儿。','想聊聊吗？']}, ['今天辛苦了。','我陪你缓一会儿。','想聊聊吗？']),
+        ({'messages':['好，等你。']}, ['好，等你。']),
+        ('```json{"messages":["我在听。","你慢慢说。"]}```', ['我在听。','你慢慢说。']),
+        ('我在这里陪你。\n\n等你想说的时候再告诉我。', ['我在这里陪你。','等你想说的时候再告诉我。']),
+    ]
+    for i, (response, expected_parts) in enumerate(cases):
+        before_ids={m['id'] for m in messages()}
+        send('SEMANTIC_UNITS_'+str(i));output['value']=response
+        page.locator('#cv-receive').click();idle()
+        saved=[m for m in messages() if m['role']=='assistant' and m['id'] not in before_ids]
+        assert [m['content'] for m in saved]==expected_parts
+        assert len({m['id'] for m in saved})==len(expected_parts)
+        for m in saved:
+            expect(page.locator('#cv-msgs .m[data-id="'+m['id']+'"]')).to_contain_text(m['content'])
 
     # Friend and thread isolation, including a late result after navigating away.
     send('MAIN_ONLY_PENDING')
@@ -198,6 +220,8 @@ with sync_playwright() as p:
     room_send('ROOM_NEXT_ROUND')
     sent=json.dumps(requests[-1],ensure_ascii=False)
     for marker in ['ROOM_BATCH_A','ROOM_BATCH_B','歌曲上下文','歌手上下文','Together / Listen Together','currentLyric','currentTime','playing','mate','PERSONA_KEEP']:assert marker in sent,marker
+    assert '默认优先像微信聊天一样回复成 2～4 个独立气泡' in sent
+    assert sent.index('Together / Listen Together') < sent.index('【本轮聊天回复格式 · 多气泡】')
     for marker in ['ROOM_NEXT_ROUND','OTHER_ONLY_PENDING','MAIN_ONLY_PENDING']:assert marker not in sent
     time_before=page.evaluate('()=>_pw.a.currentTime')
     modes.get_by_role('button',name='音乐',exact=True).click()
@@ -225,6 +249,12 @@ with sync_playwright() as p:
         raw=json.dumps(value)
         assert page.evaluate('(raw)=>IBReplyRhythm.parse(raw)',raw)==[raw]
     assert page.evaluate('()=>IBReplyRhythm.parse(JSON.stringify({messages:["a","b","c","d"]}))')==['a','b','c','d']
+    # Valid model choices are never punctuation-split, even when overlong.
+    long_reply='我听到你今天经历了很多。我们可以慢慢聊，不急着一次说完。你想从哪里开始？'
+    assert page.evaluate('(t)=>IBReplyRhythm.parse(JSON.stringify({messages:[t]}))',long_reply)==[long_reply]
+    for raw in ['一句话，不要切碎。', '第一句。第二句！第三句？', '```js\nconst a = 1;\n\nconst b = 2;\n```', '<ws_call/>\n\n我在这里陪你。', '- 第一个事项\n\n- 第二个事项', '“这是引用原文。\n\n请保持原样。”', '{"messages":["未完成的 JSON']:
+        assert page.evaluate('(raw)=>IBReplyRhythm.parse(raw)',raw)==[raw]
+    assert page.evaluate('(raw)=>IBReplyRhythm.parse(raw)','```JSON\n{"messages":["第一条。","第二条。"]}\n```')==['第一条。','第二条。']
     page.screenshot(path='/tmp/listen-reply-rhythm.png')
     assert not errors,errors
     print('PASS: send-only independent user bubbles; explicit receive; immutable batch and next queue; 1-4 delivery and fallback; stop before/after first bubble; errors/retry; reload; full batch beyond history cap; friend/thread/group isolation; native streaming; real Together API and music context; mode/partner isolation; durable room messages; uninterrupted playback; reduced motion; no page errors.')

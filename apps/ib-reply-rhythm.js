@@ -2,13 +2,29 @@
 (function(){
   if(window.IBReplyRhythm)return;
   const states=new Map();let clock=0;
-  const protocol='【本轮聊天回复格式】用户可能连续发送多条消息，请把本轮连续表达一起理解。只返回 JSON：{"messages":["自然回复"]}。messages 为 1～4 个非空字符串；短回答一条即可，只在内容自然需要分开时使用多条，不为凑数量拆碎短句。';
+  const protocol=`【本轮聊天回复格式 · 多气泡】
+用户可能连续发送多条消息，请把本轮连续表达一起理解。正文只返回 JSON 对象，唯一字段 messages，值为 1～4 个非空字符串；每个字符串就是一条独立发送、保存和显示的 assistant 消息，不是段落数组的摘要。
+默认优先像微信聊天一样回复成 2～4 个独立气泡。如果回复包含多个自然语义单元（例如回应感受、补充想法、接着提问），优先拆成多个 messages；只有非常短、单一语义的回复才使用单条。
+每条尽量只有 1 句话，必要时最多 2 句短句。不要把多个语义单元或整段完整回复塞进 messages[0]，也不要先发一条完整回复再用其他条重复它。先按意思组织，再逐条表达；不要为了凑数量添加内容、拆碎一句话或把称呼单独成条。代码、引用和工具标签保持完整，原有工具/语音标记放在所属字符串内并正确 JSON 转义。若启用了单独的 thinking 标签，标签外的正式正文仍必须遵循此 JSON 格式。
+多语义示例：{"messages":["今天这么忙，辛苦了。","我陪你慢慢缓一会儿。","想聊聊刚才发生的事吗？"]}
+短回答示例：{"messages":["好，等你。"]}
+输出前检查：多个自然语义单元是否已经分别放入 messages？每条是否简短且不重复？不要输出 Markdown 围栏或格式说明。`;
   function parse(raw){
-    const original=String(raw||'');
-    try{const value=JSON.parse(original.trim().replace(/^```(?:json)?\s*\n([\s\S]*?)\n```$/,'$1'));
+    const original=String(raw||''),text=original.trim();
+    // Recover a whole JSON fence, including compact fences used by some relays.
+    const json=text.replace(/^```(?:json)?\s*([\s\S]*?)\s*```$/i,'$1');
+    try{const value=JSON.parse(json);
       if(value&&Array.isArray(value.messages)&&value.messages.length>=1&&value.messages.length<=4&&value.messages.every(t=>typeof t==='string'&&t.trim())&&Object.keys(value).length===1)return value.messages.map(t=>t.trim());
+      // Malformed envelopes stay lossless; never expose only a partial messages list.
+      return text?[original]:[];
     }catch(e){}
-    return original.trim()?[original]:[];
+    // Only failed structured parsing may fall back to explicit prose paragraphs.
+    // Do not cut at punctuation, or split JSON, code, quotations, lists or tool tags.
+    if(!/[{}\[\]<>`]|^[ \t]*(?:[-*#>“”「」『』"'|]|\d+[.)、])/m.test(text)){
+      const paragraphs=text.split(/\r?\n[ \t]*\r?\n+/).map(t=>t.trim()).filter(Boolean);
+      if(paragraphs.length>=2&&paragraphs.length<=4&&paragraphs.every(t=>t.length>=4))return paragraphs;
+    }
+    return text?[original]:[];
   }
   function get(key){if(!states.has(key))states.set(key,{key,known:new Set(),pending:[],turn:null,listeners:new Set(),seeded:false,persist:false});return states.get(key)}
   // Saved assistant batch receipts are authoritative; this local hint may be unavailable/full.

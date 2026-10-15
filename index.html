@@ -9534,7 +9534,7 @@ async function genReply(cfg,internalCtx){
     /* v89-m：联网搜索使用边界已按用户决定移除（不再注入任何"何时不该搜"说明） */
     try{if(window._ibAppSysM&&window._ibAppSysM.text&&(!window._ibAppSysM.cfgId||window._ibAppSysM.cfgId===cfg.id))parts.push(String(window._ibAppSysM.text).slice(0,4000))}catch(e){}/* v189-p：桌面 APP 常驻说明（随 ctx.sys.set 整块进 System，切换即重建一次缓存） */
       parts.push(_SYS_SPLIT_M+((amBlock&&amBlock.stable)?amBlock.stable+'\n\n':'')+_IB_PERSONA_LOCK.replace(/^\n+/,''));/* v87-m 人格收束：System 末尾固定说明 *//* 分隔符之后＝第二块（档案核心 + 人格收束），Anthropic 单独一个断点 */
-    const sys=parts.filter(Boolean).join('\n\n')+(manual?'\n\n'+IBReplyRhythm.protocol:'')+(internalCtx?.systemContext?'\n\n'+internalCtx.systemContext:'');
+    const sys=parts.filter(Boolean).join('\n\n')+(internalCtx?.systemContext?'\n\n'+internalCtx.systemContext:'')+(manual?'\n\n'+IBReplyRhythm.protocol:'');
     let _sumText=null,_ssM=null;
     try{_ssM=await getSummarySettingsM();
       if(_ssM.enabled){const ex=await getChatSummaryM(cfg,myThread?myThread.id:null);if(ex)_sumText=ex.summary}
