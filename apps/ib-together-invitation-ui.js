@@ -1,6 +1,7 @@
 /* Invitation presentation only. The existing action executor owns all invitation state. */
 import {executeMusicAction,invitation} from './ib-music-actions.js';
 import {createAiAdapter,mockProvider} from './ib-together-ai-adapter.js';
+import {requestInvitationReply} from './ib-together-invitation-ai.js';
 const mockEnabled=()=>new URLSearchParams(location.search).get('ib-ai-mock')==='1';
 let installed=false,view=null;
 const incoming=[];
@@ -72,6 +73,27 @@ function mockControls(current,i){
     }
   });
 }
+async function realReply(current,i,cfg){
+  if(current.requesting||invitation(i.id)?.status!=='pending')return;
+  current.requesting=true;current.controller?.abort();current.controller=new AbortController();
+  const {signal}=current.controller;
+  const timeout=setTimeout(()=>current.controller.abort(),60000);
+  current.replyText='';current.description.textContent='正在等待晏景回应…';
+  const retry=current.controls.querySelector('[data-invitation-retry]');if(retry)retry.disabled=true;
+  try{
+    const response=await requestInvitationReply(cfg,{signal});
+    if(signal.aborted||view!==current||!current.root.open||invitation(i.id)?.status!=='pending')return;
+    current.replyText=response.text;current.description.textContent=response.text;
+    await executeMusicAction({type:response.decision,actor:'yanjing',inviteId:i.id},{...context(i),signal,active:()=>view===current&&current.root.open});
+  }catch(e){
+    if(view===current&&current.root.open){
+      current.heading.textContent='正在邀请晏景一起听…';current.description.textContent='暂时没有收到有效回应，请稍后重试。';
+      current.busy=false;
+      for(const b of current.controls.querySelectorAll('button'))b.disabled=false;
+      if(!retry){const b=button(current,'重试',()=>realReply(current,i,cfg));b.dataset.invitationRetry='1'}
+    }
+  }finally{clearTimeout(timeout);current.requesting=false;if(retry)retry.disabled=false}
+}
 export async function inviteFromTogether(){
   installInvitationUi();await window.loadCfgs();
   const configs=(typeof _cfgs!=='undefined'?_cfgs:[]).filter(c=>!c._group&&String(window.cfgName(c)).includes('晏景'));
@@ -82,8 +104,8 @@ export async function inviteFromTogether(){
   }
   const owner={conversationKey:'together:'+(cfg?.id||'unpaired'),friendId:cfg?.id||''};
   const result=await executeMusicAction({type:'invite_listen_together',actor:'mingyue'},owner),i=invitation(result.id);
-  const current=show('正在邀请晏景一起听…',mockEnabled()?'正在等待晏景回应…':'邀请已保存。当前尚未接入邀请回应，不会自动进入房间。',i.id);
-  closeButton(current);if(mockEnabled())mockControls(current,i);
+  const current=show('正在邀请晏景一起听…','正在等待晏景回应…',i.id);
+  closeButton(current);if(mockEnabled())mockControls(current,i);else realReply(current,i,cfg);
 }
 export function installInvitationUi(){
   if(installed)return;installed=true;
@@ -94,16 +116,16 @@ export function installInvitationUi(){
   });
   window.addEventListener('ib-music-invitation-accepting',({detail})=>{
     const current=view;if(!current||current.id!==detail.invitation.id)return;
-    current.busy=true;current.heading.textContent=detail.actor==='yanjing'?'晏景接受了邀请':'邀请已接受';current.description.textContent='正在为你们打开一起听…';
+    current.busy=true;current.heading.textContent=detail.actor==='yanjing'?'晏景接受了邀请':'邀请已接受';current.description.textContent=current.replyText||'正在为你们打开一起听…';
     for(const b of current.controls.querySelectorAll('button,select'))b.disabled=true;
-    detail.waitUntil(new Promise(resolve=>setTimeout(resolve,650)));
+    detail.waitUntil(new Promise(resolve=>setTimeout(resolve,current.replyText?1200:650)));
   });
   window.addEventListener('ib-music-invitation-change',()=>{
     const current=view;if(!current?.id)return;const i=invitation(current.id);
     if(i?.status==='accepted'){current.root.close();window.IBApps?.close('together')}
     else if(i?.status==='declined'){
       current.heading.textContent=i.actor==='mingyue'?'晏景这次先不一起听':'这次先不一起听';
-      current.description.textContent='这次先不一起听';current.controls.replaceChildren();closeButton(current);
+      current.description.textContent=current.replyText||'这次先不一起听';current.controls.replaceChildren();closeButton(current);
     }
   });
 }

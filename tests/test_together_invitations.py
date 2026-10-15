@@ -42,10 +42,11 @@ with sync_playwright() as p:
     assert plain.evaluate('async()=> (await dbGetAll("apiConfigs")).length') == 0
     assert plain.evaluate('()=>localStorage.getItem("ib_music_participation_v1")') is None
     plain.locator('dialog').get_by_role('button', name='关闭', exact=True).click()
-    # Test-only fixture: even a configured API must not silently trigger real AI or fake acceptance.
+    # Test-only credential; blocked network must show retry, never fabricate acceptance.
     plain.evaluate("async()=>{await dbPut('apiConfigs',{id:'configured-test',nickname:'晏景',provider:'openai',apiKey:'test-only-not-a-real-key'});await loadCfgs()}")
     enter(plain)
-    expect(plain.locator('dialog p')).to_contain_text('当前尚未接入邀请回应')
+    expect(plain.locator('dialog p')).to_contain_text('暂时没有收到有效回应')
+    expect(plain.locator('dialog').get_by_role('button', name='重试', exact=True)).to_be_visible()
     assert plain.evaluate('()=>Object.values(JSON.parse(localStorage.ib_music_participation_v1).invitations).every(i=>i.status==="pending")')
     plain.locator('dialog').get_by_role('button', name='关闭', exact=True).click()
     enter(plain)
