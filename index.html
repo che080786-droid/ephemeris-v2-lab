@@ -4246,6 +4246,7 @@ self.addEventListener(&#x27;fetch&#x27;,function(e){
   </div>
   <div id="toast"></div>
 <link rel="stylesheet" href="apps/ib-reply-rhythm.css">
+<link rel="stylesheet" href="apps/ib-chat-attachments.css">
 <script src="apps/ib-reply-rhythm.js"></script>
 <script></script><script>
 'use strict';
@@ -8334,10 +8335,7 @@ function drawAttach(){
   });
 }
 document.getElementById('cv-plus').addEventListener('click',()=>{
-  actionSheet([
-    {label:'发送图片',fn:()=>{if(_pendImgs.length>=4){toast('一次最多 4 张');return}document.getElementById('chat-img-file').click()}},
-    {label:'发送文件（文本类）',fn:()=>{if(_pendFiles.length>=4){toast('一次最多 4 个文件');return}document.getElementById('chat-doc-file').click()}}
-  ]);
+  window.IBChatAttachments?.toggle();
 });
 document.getElementById('chat-doc-file').addEventListener('change',async e=>{
   const files=Array.from(e.target.files||[]).slice(0,4);
@@ -26738,6 +26736,7 @@ window._ibChatImp={open:open,read:read,parseText:parseText,run:run,undo:undo,his
 })();
 </script>
 <script src="apps/ib-chat-reply-rhythm.js"></script>
+<script src="apps/ib-chat-attachments.js"></script>
 <!-- Temporary layout diagnostic: opt in with ?ib-layout-debug=1; no default load. -->
 <script>
 if(new URLSearchParams(location.search).get('ib-layout-debug')==='1'){

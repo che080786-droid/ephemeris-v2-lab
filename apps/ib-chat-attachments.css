@@ -1,0 +1,19 @@
+/* Ordinary Chat only; send/receive behavior and Together's composer are untouched. */
+#conv .cv-input{gap:6px;min-width:0;box-sizing:border-box}
+#conv .cv-input>#cv-ta{flex:1 1 0;min-width:0;width:0;box-sizing:border-box}
+#conv .cv-input>#cv-plus,#conv .cv-input>#cv-send,#conv .cv-input>#cv-receive{flex:0 0 44px;min-width:44px;width:44px;height:44px;min-height:44px;box-sizing:border-box}
+/* Avoid a flash before the existing voice/sticker nodes are moved into the grid. */
+#conv .cv-input>#cv-mic,#conv .cv-input>#cv-kao{display:none}
+#cv-attachment-panel{flex:none;box-sizing:border-box;margin:0 10px 2px;padding:8px 12px 14px;border:1px solid var(--glass-line);border-radius:22px;max-height:min(280px,38vh);max-height:min(280px,38dvh);overflow:auto;overscroll-behavior:contain;color:var(--tx)}
+#cv-attachment-panel[hidden]{display:none!important}
+#cv-attachment-panel .cv-tools-heading{display:flex;align-items:center;gap:8px;min-width:0;font:12px/1.5 var(--sys);color:var(--tx2)}
+#cv-attachment-panel .cv-tools-heading small{margin-left:auto;font-size:10px}
+#cv-attachment-panel .cv-tools-heading button{flex:none;width:44px;height:44px;border:0;border-radius:50%;background:transparent;color:inherit;font:22px/1 var(--sys);cursor:pointer}
+#cv-attachment-panel .cv-tools-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 8px;padding-top:6px}
+#cv-attachment-panel .cv-tool{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:8px;min-width:0;width:100%;height:auto;min-height:82px;box-sizing:border-box;padding:0 2px 6px;border:0;border-radius:12px;background:transparent;color:var(--tx2);font:12px/1.5 var(--sys);cursor:pointer;animation:none}
+#cv-attachment-panel .cv-tool-icon{display:flex;align-items:center;justify-content:center;flex:none;box-sizing:border-box;width:50px;height:50px;max-width:100%;border:1px solid var(--glass-line);border-radius:16px;background:var(--soft);color:inherit}
+#cv-attachment-panel .cv-tool-icon svg{width:23px;height:23px;max-width:100%;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+#cv-attachment-panel .cv-tool-label{text-align:center;overflow-wrap:anywhere}
+#cv-attachment-panel .cv-tool.rec .cv-tool-icon{color:var(--danger);border-color:var(--danger)}
+#cv-attachment-panel button:focus-visible{outline:2px solid var(--tx2);outline-offset:2px}
+#conv #cv-plus[aria-expanded=true]{background:var(--soft);color:var(--tx)}
