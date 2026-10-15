@@ -27,6 +27,8 @@ with sync_playwright() as p:
 
     boot()
     expect(page.locator('#oh-count')).to_have_text('待设置')
+    expect(page.locator('#oh-count')).to_have_class('oh-count is-empty')
+    assert page.locator('#oh-count').evaluate('(e)=>getComputedStyle(e).fontSize')=='16px'
     expect(page.locator('#oh-photo-empty')).to_be_visible()
     expect(page.locator('#oh-time')).to_have_text('19:07')
     expect(page.locator('#oh-phase')).to_contain_text('NIGHT')
@@ -60,6 +62,7 @@ with sync_playwright() as p:
     assert page.evaluate("async()=>(await dbGet('apiSettings','calendarSettings')).meetSet['home-yanjing']")=='2026-09-07'
     assert page.evaluate("async()=>(await dbGet('apiConfigs','home-yanjing')).systemPrompt")=='USER_PERSONA_UNCHANGED'
     boot();expect(page.locator('#oh-count')).to_have_text('37')
+    expect(page.locator('#oh-count')).to_have_class('oh-count')
     expect(page.locator('#oh-phrase')).to_have_text(original_phrase)
     page.locator('#oh-date-edit').click();page.locator('#oh-start-date').fill('2026-10-16')
     assert not page.locator('#oh-start-date').evaluate('(e)=>e.checkValidity()')
@@ -91,8 +94,39 @@ with sync_playwright() as p:
             assert page.evaluate('()=>document.documentElement.scrollWidth<=innerWidth'),(width,dark)
             assert page.locator('#oh-time').evaluate('(e)=>e.scrollWidth<=e.clientWidth'),width
             sizes=page.locator('.oh-avatar').evaluate_all('(xs)=>xs.map(e=>e.getBoundingClientRect().width)')
-            assert sizes==[56,56],sizes
+            assert sizes==[38,38],sizes
             assert page.locator('#oh-count').evaluate('(e)=>getComputedStyle(e).color')!='rgba(0, 0, 0, 0)'
+    # First-screen magazine hierarchy, including a shorter Safari-like viewport.
+    # Insets are simulated; this is not a claim of physical iPhone validation.
+    for width,height,top,bottom in [(320,568,0,0),(375,667,0,0),(390,664,20,34),(390,744,0,0),(430,932,59,34)]:
+        page.set_viewport_size({'width':width,'height':height})
+        for dark in [False,True]:
+            page.evaluate('''({top,bottom,dark})=>{
+                document.documentElement.style.setProperty('--sat',top+'px');
+                document.documentElement.style.setProperty('--sab',bottom+'px');
+                document.body.classList.toggle('theme-infernal',dark);window.scrollTo(0,0);
+            }''',{'top':top,'bottom':bottom,'dark':dark})
+            bounds=page.evaluate('''()=>Object.fromEntries(['.our-home-switch','.oh-clock','.oh-days','.oh-heartbeat','#oh-time','#oh-today-title','.oh-phrase','#dock'].map(s=>{
+                const e=document.querySelector(s),r=e.getBoundingClientRect();return [s,{top:r.top,bottom:r.bottom,height:r.height,width:r.width,left:r.left,font:parseFloat(getComputedStyle(e).fontSize)}];
+            }))''')
+            dock=bounds['#dock']['top']
+            assert bounds['.oh-days']['bottom']<=dock,(width,height,bounds)
+            assert bounds['#oh-today-title']['bottom']<=dock,(width,height,bounds)
+            assert bounds['.oh-phrase']['top']+12<=dock,(width,height,bounds)
+            assert 150<=bounds['.oh-days']['height']<=190,(width,height,bounds)
+            assert 10<=bounds['.oh-days']['left']<=14,(width,height,bounds)
+            assert bounds['.oh-heartbeat']['width']>=bounds['.oh-days']['width']*.5
+            assert 56<=bounds['#oh-time']['font']<=68
+            assert bounds['.oh-clock']['height']<=180
+            assert bounds['.our-home-switch']['height']<=40
+            assert page.evaluate('()=>document.documentElement.scrollWidth<=innerWidth')
+            page.evaluate('()=>window.scrollTo(0,document.documentElement.scrollHeight)')
+            assert page.locator('#oh-photos').evaluate('(e)=>e.getBoundingClientRect().bottom')<=page.locator('#dock').evaluate('(e)=>e.getBoundingClientRect().top')-8
+            if width==390 and height==744:
+                page.evaluate('()=>window.scrollTo(0,0)')
+                page.screenshot(path='/tmp/ib-home-density-'+('dark' if dark else 'light')+'.png')
+            print('layout',width,height,'dark' if dark else 'light','card',round(bounds['.oh-days']['height'],1),'Today bottom',round(bounds['#oh-today-title']['bottom'],1),'dock',round(dock,1))
+    page.evaluate("()=>{document.documentElement.style.removeProperty('--sat');document.documentElement.style.removeProperty('--sab')}")
     page.emulate_media(reduced_motion='reduce')
     assert page.locator('.oh-heartbeat path').evaluate('(e)=>getComputedStyle(e).animationName')=='none'
     page.emulate_media(reduced_motion='no-preference')

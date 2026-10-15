@@ -18,3 +18,9 @@ IB_TEST_BASE_URL=http://localhost:8780 python3 -B tests/test_reply_rhythm.py
 ```
 
 浏览器使用隔离本地数据和拦截接口，覆盖日期来源/持久化、稳定短句/跨日、真实入口、320–430px 明暗布局、reduced motion，以及 Chat/Together 请求风格与原批次逻辑。真实 iPhone Safari 的安全区、地址栏/底栏、日期选择器、触控和真实模型表达风格仍需真机验收。
+
+## 移动端密度调整
+
+Home 内容左右各 12px；顶部为左对齐日期、56/64px 时间、旁侧 DAY/NIGHT 与欢迎语。普通视口时间区高 170px，高度不超过 700px 的紧凑视口为 148px。视图切换高 38px。OUR DAYS 收紧为约 176–183px，头像 38px，天数 40px，待设置文字 16px；heartbeat 占据头像之间的空间，中间仅保留一小段波形。关系名、日期和编辑入口保持轻量层级。Today 顶部间距 14/18px，Note/Letters 最小高 68px，Album 前间距 18px。没有使用容器缩放或 zoom。
+
+原固定底栏不变，Home 末尾保留 78px 加上外层 main 已有的安全区与底部内边距。布局测试覆盖 320×568、375×667、390×664、390×744、430×932 的明暗视口及模拟安全区：首屏完整显示 OUR DAYS、Today 标题与正文开头；滚动到底后 Album 照片位于底栏上方。模拟布局不能代替真实 Safari 验收。

@@ -23,7 +23,7 @@
   <section class="oh-days" aria-labelledby="oh-days-title">
     <h2 class="oh-label" id="oh-days-title">OUR DAYS</h2>
     <div class="oh-pair"><div class="oh-person"><div class="oh-avatar" id="oh-me-avatar" role="img" aria-label="明月头像"></div><small id="oh-me-name">明月</small></div>
-    <svg class="oh-heartbeat" viewBox="0 0 100 30" aria-hidden="true"><path d="M1 15H32L39 15 43 10 48 21 53 7 58 17 63 15H99"/></svg>
+    <svg class="oh-heartbeat" viewBox="0 0 240 30" preserveAspectRatio="none" aria-hidden="true"><path d="M1 15H100L108 15 112 11 117 20 122 8 127 17 132 15H239"/></svg>
     <div class="oh-person"><div class="oh-avatar" id="oh-mate-avatar" role="img" aria-label="晏景头像"></div><small>晏景</small></div></div>
     <div class="oh-count" id="oh-count">待设置</div>
     <p class="oh-label">MINGYUE WITH YANJING</p><p class="oh-since" id="oh-since">从哪一天开始，由你决定</p>
@@ -60,6 +60,7 @@
     $('oh-phrase').textContent=phrase(date);input.max=date;
     const start=day(since),today=day(date),valid=start!==null&&start<=today;
     $('oh-count').textContent=valid?String(today-start):'待设置';
+    $('oh-count').classList.toggle('is-empty',!valid);
     $('oh-since').textContent=valid?'Since '+since.replaceAll('-','.'):'从哪一天开始，由你决定';
     edit.textContent=valid?'调整起始日期':'设置起始日期';
   }
