@@ -15,6 +15,22 @@ export function mountListenRoom(player){
   const identity=document.createElement('button');identity.type='button';identity.className='tg-room-identity';identity.setAttribute('aria-label','共听伙伴与状态');
   const avatarPlaceholder='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 21a7 7 0 0 1 14 0"/></svg>';
   identity.innerHTML='<span class="tg-room-pair" aria-hidden="true"><span class="ma-ava">'+avatarPlaceholder+'</span><i class="tg-pair-link">∞</i><span class="ma-ava">'+avatarPlaceholder+'</span></span><span class="tg-pair-copy"><strong>01 / LISTEN TOGETHER</strong><span class="tg-pair-subtitle"></span><small></small></span>';
+  // Decorative only: CSS reads the existing is-paired state and chat mode.
+  const heartbeat=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  heartbeat.setAttribute('class','tg-connection-heartbeat');heartbeat.setAttribute('viewBox','0 0 120 20');
+  heartbeat.setAttribute('aria-hidden','true');heartbeat.setAttribute('focusable','false');
+  for(const [kind,wave] of [
+    ['waiting','M1 10H38L43 8L48 12L53 10H119'],
+    ['paired','M1 10H30L36 8L42 12L48 3L54 17L60 8L66 10H119']
+  ]){
+    const group=document.createElementNS(heartbeat.namespaceURI,'g');group.setAttribute('class','tg-heartbeat-'+kind);
+    for(const layer of ['base','trace']){
+      const path=document.createElementNS(heartbeat.namespaceURI,'path');path.setAttribute('d',wave);
+      path.setAttribute('pathLength','100');path.setAttribute('class','tg-heartbeat-'+layer);group.appendChild(path);
+    }
+    heartbeat.appendChild(group);
+  }
+  identity.querySelector('.tg-pair-copy').appendChild(heartbeat);
   identity.addEventListener('click',()=>player.querySelector('#ma-mate').click());body.insertAdjacentElement('beforebegin',identity);
   const stage=document.createElement('div');stage.className='tg-room-stage';body.insertAdjacentElement('beforebegin',stage);stage.appendChild(body);
   const chat=document.createElement('section');chat.className='tg-room-chat';chat.setAttribute('aria-label','一起听对话');

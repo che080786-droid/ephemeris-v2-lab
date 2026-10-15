@@ -14,6 +14,20 @@
 #music-app.tg-listen .tg-room-identity small{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:.65rem;line-height:1.6;color:var(--tx2)}
 #music-app.tg-listen .tg-room-identity small:before{content:'';width:5px;height:5px;flex:none;border-radius:50%;background:var(--tx3);opacity:.55}
 #music-app.tg-listen .tg-room-identity.is-paired small:before{background:var(--acc);opacity:1}
+/* Quiet connection waveform; no timers, playback hooks, or new connection state. */
+#music-app.tg-listen .tg-connection-heartbeat{display:none;width:120px;max-width:100%;height:20px;margin-top:3px;color:var(--tg-secondary,var(--tx2));fill:none;stroke:currentColor;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+#music-app.tg-listen[data-tg-view=chat] .tg-connection-heartbeat{display:block}
+#music-app.tg-listen .tg-heartbeat-paired{display:none}
+#music-app.tg-listen .is-paired .tg-heartbeat-paired{display:inline}
+#music-app.tg-listen .is-paired .tg-heartbeat-waiting{display:none}
+#music-app.tg-listen .tg-heartbeat-base{opacity:.18}
+#music-app.tg-listen .tg-heartbeat-trace{opacity:.3;stroke-dasharray:18 100;stroke-dashoffset:118}
+#music-app.tg-listen[data-tg-view=chat] .tg-heartbeat-trace{animation:tg-connection-sweep 4s linear infinite}
+#music-app.tg-listen .is-paired .tg-heartbeat-base{opacity:.28}
+#music-app.tg-listen .is-paired .tg-heartbeat-trace{opacity:.5;animation-duration:3.2s}
+@keyframes tg-connection-sweep{0%{stroke-dashoffset:118}75%,100%{stroke-dashoffset:0}}
+body.ib-reduce #music-app.tg-listen .tg-heartbeat-trace{animation:none;opacity:0}
+@media(prefers-reduced-motion:reduce){#music-app.tg-listen[data-tg-view=chat] .tg-heartbeat-trace{animation:none;opacity:0}}
 /* Keep native pairing nodes as the data source; present them in the compact header. */
 #music-app.tg-listen .ma-duo{display:none!important}
 #music-app.tg-listen .ma-duo-cap{display:none}
