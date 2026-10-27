@@ -3,9 +3,12 @@
 #sec-profile-cal[data-home-view="desk"] > .our-home{display:none}
 /* Compensate only this view for main's 14px inset, then use a true 12px gutter. */
 body #sec-profile-cal[data-home-view="home"]{margin-left:-14px;margin-right:-14px}
-.our-home-switch{display:flex;gap:18px;padding:0 max(12px,env(safe-area-inset-right)) 2px max(12px,env(safe-area-inset-left))}
-.our-home-switch button{font:inherit;font-size:.7rem;color:var(--tx2);border:0;border-bottom:1px solid transparent;background:none;padding:4px 0;min-height:36px;cursor:pointer}
-.our-home-switch button[aria-pressed="true"]{color:var(--tx);border-color:currentColor}
+/* Dots sit in the header margin, without adding a second navigation row. */
+#sec-profile-cal[data-home-view]{position:relative;overflow-x:clip;overflow-anchor:none}
+.our-home-switch{position:absolute;top:-8px;right:12px;z-index:2;display:flex;gap:0}
+.our-home-switch button{display:grid;place-items:center;width:24px;height:24px;padding:0;border:0;background:none;cursor:pointer}
+.our-home-switch button::after{content:'';width:4px;height:4px;border-radius:50%;background:var(--tx2);opacity:.23}
+.our-home-switch button[aria-pressed="true"]::after{opacity:.7}
 /* main already reserves the bottom safe area; leave room for the 58px dock too. */
 #our-home{max-width:640px;margin:0 auto;padding:0 max(12px,env(safe-area-inset-right)) 78px max(12px,env(safe-area-inset-left));color:var(--tx);overflow-wrap:anywhere}
 #our-home *{min-width:0}
@@ -15,9 +18,9 @@ body #sec-profile-cal[data-home-view="home"]{margin-left:-14px;margin-right:-14p
 #our-home time{display:block;font:400 64px/1.05 var(--serif);letter-spacing:-.035em;font-variant-numeric:tabular-nums;white-space:nowrap;margin:0}
 #our-home .oh-phase{font-size:10px;letter-spacing:.14em;color:var(--tx2)}
 #our-home .oh-greeting{grid-column:1/-1;font:400 .95rem/1.5 var(--serif);margin:0}
-#our-home .oh-days{position:relative;text-align:center;padding:12px 14px;border:1px solid var(--line);border-radius:18px;background:var(--soft);background:color-mix(in srgb,var(--soft) 65%,transparent)}
-#our-home #oh-days-title{text-align:left;max-width:calc(100% - 112px)}
-#our-home #oh-date-edit{position:absolute;top:0;right:12px;min-height:44px;max-width:112px}
+#our-home .oh-days{position:relative;text-align:center;padding:12px 14px;border:0;border-radius:18px;background:var(--soft);background:linear-gradient(155deg,color-mix(in srgb,var(--soft) 48%,transparent),transparent 85%)}
+#our-home #oh-days-title{text-align:left;max-width:calc(100% - 100px)}
+#our-home #oh-date-edit{position:absolute;top:0;right:12px;min-height:44px;max-width:100px;font-size:.6rem;opacity:.65}
 #our-home .oh-pair{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:17px 0 2px}
 #our-home .oh-person{flex:0 0 38px;text-align:center}
 #our-home .oh-avatar{width:38px;height:38px;border:1px solid var(--line);border-radius:50%;display:grid;place-items:center;font:1rem var(--serif);background-color:var(--soft);color:var(--tx2)}
@@ -27,10 +30,9 @@ body #sec-profile-cal[data-home-view="home"]{margin-left:-14px;margin-right:-14p
 @keyframes oh-breathe{0%,100%{opacity:.35}45%{opacity:.7}55%{opacity:.45}}
 #our-home .oh-count{font:400 40px/1 var(--serif);margin:0 0 2px}
 #our-home .oh-count.is-empty{font:400 16px/40px var(--serif);color:var(--tx2)}
-#our-home .oh-days > p.oh-label{font-size:9px;line-height:1.2;letter-spacing:.14em}
-#our-home .oh-since{font-size:10px;line-height:1.4;color:var(--tx2);margin:2px 0 0}
+#our-home .oh-since{font-size:10px;line-height:1.4;color:var(--tx2);margin:8px 0 4px}
 #our-home button{cursor:pointer;color:var(--tx);font-family:inherit}
-#our-home .oh-edit{border:0;background:none;color:var(--tx2);font-size:.68rem;min-height:44px;text-decoration:underline;text-underline-offset:4px}
+#our-home .oh-edit{border:0;background:none;color:var(--tx2);font-size:.68rem;min-height:44px;text-decoration:none}
 #our-home .oh-date-form{margin:12px 0 0;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center}
 #our-home .oh-date-form[hidden]{display:none}
 #our-home .oh-date-form label{width:100%;font-size:.72rem;color:var(--tx2)}
@@ -40,15 +42,15 @@ body #sec-profile-cal[data-home-view="home"]{margin-left:-14px;margin-right:-14p
 #our-home .oh-today{padding:18px 0 10px}
 #our-home .oh-phrase{font:400 1.06rem/1.4 var(--serif);margin-top:8px}
 #our-home .oh-source{font-size:.6rem;line-height:1.4;color:var(--tx2);margin-top:6px}
-#our-home .oh-now{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:0 0 14px;color:var(--tx2);font-size:.7rem;line-height:1.4}
+#our-home .oh-now{display:flex;align-items:baseline;justify-content:flex-start;gap:8px;padding:0 0 18px;color:var(--tx2);font-size:.7rem;line-height:1.4}
 #our-home .oh-doors{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding-bottom:18px}
-#our-home .oh-door{display:flex;flex-direction:column;justify-content:center;gap:6px;border:0;border-top:1px solid var(--line);border-radius:0;background:none;text-align:left;padding:12px 2px 8px;min-height:68px}
-#our-home .oh-door b{display:block;font:400 1.35rem/1.1 var(--serif);margin:0}
+#our-home .oh-door{display:flex;flex-direction:column;justify-content:center;gap:6px;border:0;border-radius:0;background:none;text-align:left;padding:12px 2px 8px;min-height:68px}
+#our-home .oh-door b{display:block;font:400 1.13rem/1.4 var(--serif);margin:0}
 #our-home .oh-door span{font-size:.69rem;line-height:1.4;color:var(--tx2)}
 #our-home .oh-album-head{display:flex;align-items:center;justify-content:space-between}
-#our-home .oh-album-head h2{font:400 1.4rem var(--serif)}
+#our-home .oh-album-head h2{font:400 1.13rem/1.4 var(--serif)}
 #our-home .oh-photos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
-#our-home .oh-photos .oh-photo{display:block;aspect-ratio:1;border-radius:13px;overflow:hidden;border:1px solid var(--line)}
+#our-home .oh-photos .oh-photo{display:block;aspect-ratio:1;border-radius:13px;overflow:hidden;border:0}
 #our-home .oh-photos img{width:100%;height:100%;object-fit:cover;display:block}
 #our-home .oh-empty{font:400 .83rem/1.6 var(--serif);color:var(--tx2);padding:14px 0 8px}
 #our-home[data-phase="night"] .oh-clock{opacity:.9}

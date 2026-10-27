@@ -87,6 +87,63 @@ with sync_playwright() as p:
     page.locator('#oh-letters').click();expect(page.locator('#page-letters')).to_have_class('page active')
     refresh()
 
+    # Touch ownership: Safari edge, vertical/diagonal intent, thresholds and cancellation.
+    def swipe(x,y,dx,dy,cancel=False,multi=False,target='#our-home'):
+        return page.evaluate("""({x,y,dx,dy,cancel,multi,target})=>{
+            const el=document.querySelector(target), make=(x,y,id=1)=>new Touch({identifier:id,target:el,clientX:x,clientY:y});
+            const start=make(x,y),end=make(x+dx,y+dy);
+            el.dispatchEvent(new TouchEvent('touchstart',{bubbles:true,touches:[start]}));
+            const move=new TouchEvent('touchmove',{bubbles:true,cancelable:true,touches:multi?[end,make(x,y,2)]:[end]});
+            el.dispatchEvent(move);
+            el.dispatchEvent(new TouchEvent(cancel?'touchcancel':'touchend',{bubbles:true,touches:[],changedTouches:[end]}));
+            return {prevented:move.defaultPrevented,view:document.querySelector('#sec-profile-cal').dataset.homeView};
+        }""",dict(x=x,y=y,dx=dx,dy=dy,cancel=cancel,multi=multi,target=target))
+
+    page.evaluate('()=>window.scrollTo(0,150)')
+    home_scroll=page.evaluate('scrollY')
+    page.locator('#oh-date-edit').click()
+    page.locator('#oh-start-date').fill('2026-09-10')
+    home_scroll=page.evaluate('scrollY')
+    page.evaluate("()=>window.__homeNode=document.querySelector('#our-home')")
+    for x in [0,12,23]:
+        assert swipe(x,250,110,0)=={'prevented':False,'view':'home'}
+    for dx,dy in [(-90,100),(-90,65),(-59,0)]:
+        assert swipe(200,250,dx,dy)['view']=='home'
+    assert not swipe(200,250,-20,100)['prevented']
+    assert swipe(200,250,-100,0,cancel=True)['view']=='home'
+    assert not swipe(200,250,-100,0,multi=True)['prevented']
+    assert not swipe(200,250,-100,0,target='#oh-start-date')['prevented']
+    assert swipe(200,250,-100,0)=={'prevented':True,'view':'desk'}
+    assert page.evaluate("()=>document.querySelector('#sb-desk')!==null")
+    assert page.evaluate("()=>document.querySelector('#sec-profile-cal').getAnimations({subtree:true}).some(a=>a.effect.getTiming().duration===260)")
+    page.wait_for_timeout(300)
+    page.evaluate("()=>window.__deskNode=document.querySelector('#sb-desk')")
+    assert swipe(0,250,120,0,target='#sec-profile-cal')=={'prevented':False,'view':'desk'}
+    assert swipe(80,250,100,0,target='#sec-profile-cal')['view']=='home'
+    page.wait_for_timeout(350)
+    assert abs(page.evaluate('scrollY')-home_scroll)<=1
+    assert page.evaluate("()=>window.__homeNode===document.querySelector('#our-home')")
+    expect(page.locator('#oh-start-date')).to_have_value('2026-09-10')
+    expect(page.locator('#oh-date-form')).to_be_visible()
+    # Repeat while reduced motion is enabled: no transition animations.
+    page.emulate_media(reduced_motion='reduce')
+    assert swipe(200,250,-100,0)['view']=='desk'
+    assert page.evaluate("()=>window.__deskNode===document.querySelector('#sb-desk')")
+    assert not page.evaluate("()=>document.querySelector('#sec-profile-cal').getAnimations({subtree:true}).length")
+    page.wait_for_timeout(350)
+    pager=page.locator('#dk-osw')
+    if pager.count() and pager.locator(':scope > .desk-pg').count()>1:
+        page.evaluate("()=>{const p=document.querySelector('#dk-osw');p._pg=1;p.scrollLeft=p.clientWidth}")
+        assert swipe(80,250,100,0,target='#dk-osw')['view']=='desk'
+        page.locator('.our-home-switch [data-view=home]').click()
+        page.locator('.our-home-switch [data-view=desk]').click()
+        assert page.evaluate("()=>document.querySelector('#dk-osw')._pg")==1
+        assert abs(page.evaluate("()=>{const p=document.querySelector('#dk-osw');return p.scrollLeft-p.clientWidth}"))<=1
+    page.locator('.our-home-switch [data-view=home]').click()
+    page.emulate_media(reduced_motion='no-preference')
+    page.locator('#oh-date-cancel').click()
+    page.evaluate('()=>window.scrollTo(0,0)')
+
     for width in [320,375,390,430]:
         page.set_viewport_size({'width':width,'height':844})
         for dark in [False,True]:

@@ -14,7 +14,7 @@
   function phrase(date){let seed=0;for(const c of date)seed=(seed*31+c.charCodeAt(0))>>>0;return phrases[seed%phrases.length]}
   let since='',about={},mate=null,ready=false,request=0;
   const tabs=document.createElement('div');tabs.className='our-home-switch';tabs.setAttribute('role','group');tabs.setAttribute('aria-label','Home 视图');
-  tabs.innerHTML='<button type="button" data-view="home" aria-pressed="true">我们的家</button><button type="button" data-view="desk" aria-pressed="false">Desk</button>';
+  tabs.innerHTML='<button type="button" data-view="home" aria-label="我们的家" aria-pressed="true"></button><button type="button" data-view="desk" aria-label="Desk" aria-pressed="false"></button>';
   const home=document.createElement('div');home.id='our-home';home.className='our-home';home.setAttribute('aria-label','月序 · 我们的家');
   home.innerHTML=`<header class="oh-clock">
     <div class="oh-label" id="oh-date"></div><time id="oh-time" aria-label="当前时间"></time>
@@ -26,7 +26,7 @@
     <svg class="oh-heartbeat" viewBox="0 0 240 30" preserveAspectRatio="none" aria-hidden="true"><path d="M1 15H100L108 15 112 11 117 20 122 8 127 17 132 15H239"/></svg>
     <div class="oh-person"><div class="oh-avatar" id="oh-mate-avatar" role="img" aria-label="晏景头像"></div><small>晏景</small></div></div>
     <div class="oh-count" id="oh-count">待设置</div>
-    <p class="oh-label">MINGYUE WITH YANJING</p><p class="oh-since" id="oh-since">从哪一天开始，由你决定</p>
+    <p class="oh-since" id="oh-since">从哪一天开始，由你决定</p>
     <button type="button" class="oh-edit" id="oh-date-edit" aria-expanded="false" aria-controls="oh-date-form">设置起始日期</button>
     <form class="oh-date-form" id="oh-date-form" hidden><label for="oh-start-date">我们的起始日期</label>
       <input type="date" id="oh-start-date" required><button class="oh-save" type="submit">保存</button>
@@ -36,19 +36,80 @@
   <section class="oh-today" aria-labelledby="oh-today-title"><h2 class="oh-label" id="oh-today-title">FROM YANJING · TODAY</h2>
     <p class="oh-phrase" id="oh-phrase"></p><p class="oh-source">本地短句 · 非 AI 生成</p></section>
   <div class="oh-now"><span>晏景 · 此刻</span><span>在这里</span></div>
-  <div class="oh-doors"><button type="button" class="oh-door" id="oh-note"><b>Note</b><span>打开便笺</span></button>
-    <button type="button" class="oh-door" id="oh-letters"><b>Letters</b><span>打开信箱</span></button></div>
-  <section aria-labelledby="oh-album-title"><div class="oh-album-head"><h2 id="oh-album-title">Album</h2><button class="oh-edit" type="button" id="oh-space">Space 照片</button></div>
+  <div class="oh-doors"><button type="button" class="oh-door" id="oh-note"><b>便笺</b><span>打开便笺</span></button>
+    <button type="button" class="oh-door" id="oh-letters"><b>信箱</b><span>读一封信</span></button></div>
+  <section aria-labelledby="oh-album-title"><div class="oh-album-head"><h2 id="oh-album-title">相册</h2><button class="oh-edit" type="button" id="oh-space">去 Space 看看</button></div>
     <div class="oh-photos" id="oh-photos"></div><p class="oh-empty" id="oh-photo-empty">这里还没有照片</p><p class="oh-source" id="oh-photo-source" hidden>来自 Space 的本地照片</p></section>`;
   host.prepend(tabs,home);host.dataset.homeView='home';
   const $=id=>document.getElementById(id);
   const form=$('oh-date-form'),input=$('oh-start-date'),error=$('oh-date-error'),edit=$('oh-date-edit');
+  // Keep the original nodes (including Desk's own pager) and each view's scroll.
+  const scroll={home:0,desk:0},deskScroll=new Map();
+  let deskShown=false,animations=[],gesture=null,suppressClickUntil=0;
   function view(value){
+    const previous=host.dataset.homeView;
+    if(value===previous)return;
+    animations.forEach(a=>a.cancel());animations=[];
+    scroll[previous]=window.scrollY;
+    if(previous==='desk')deskScroll.clear();
+    if(previous==='desk')host.querySelectorAll('*').forEach(el=>{
+      if(el.scrollLeft||el.scrollTop)deskScroll.set(el,{left:el.scrollLeft,top:el.scrollTop});
+    });
+    // A hidden focused control must not retain keyboard focus.
+    if(host.contains(document.activeElement)&&!tabs.contains(document.activeElement))document.activeElement.blur();
     host.dataset.homeView=value;
     tabs.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===value)));
-    if(value==='desk')requestAnimationFrame(()=>{window.dispatchEvent(new Event('resize'))});
+    window.scrollTo({top:scroll[value],behavior:'instant'});
+    if(value==='desk'){
+      // Only the first reveal needs the existing layout to measure visible widgets.
+      if(!deskShown){deskShown=true;if(typeof _dkOsFlow==='function')_dkOsFlow()}
+      deskScroll.forEach((pos,el)=>{if(el.isConnected){el.scrollLeft=pos.left;el.scrollTop=pos.top}});
+    }
+    if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&!document.body.classList.contains('ib-reduce')){
+      const direction=value==='desk'?1:-1;
+      Array.from(host.children).filter(el=>el!==tabs&&getComputedStyle(el).display!=='none').forEach(el=>{
+        animations.push(el.animate([{transform:'translateX('+direction*32+'px)',opacity:.65},{transform:'translateX(0)',opacity:1}],{duration:260,easing:'cubic-bezier(.22,.61,.36,1)'}));
+      });
+    }
   }
   tabs.addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(b)view(b.dataset.view)});
+  function blocked(){return document.body.matches('.dk-edit,.dk-drag')||!!document.querySelector('.sheet.open')}
+  host.addEventListener('touchstart',e=>{
+    gesture=null;
+    if(e.touches.length!==1||blocked())return;
+    const t=e.touches[0];
+    // Leave Safari's edge navigation entirely alone, including its touchmove.
+    if(t.clientX<24||e.target.closest('input,textarea,select,video,audio,[contenteditable], [role="slider"]'))return;
+    gesture={x:t.clientX,y:t.clientY,id:t.identifier,axis:null,view:host.dataset.homeView};
+  },{passive:true,capture:true});
+  host.addEventListener('touchmove',e=>{
+    if(!gesture)return;
+    if(e.touches.length!==1||blocked()){gesture=null;return}
+    const t=e.touches[0];if(t.identifier!==gesture.id){gesture=null;return}
+    const dx=t.clientX-gesture.x,dy=t.clientY-gesture.y;
+    if(!gesture.axis){
+      if(Math.max(Math.abs(dx),Math.abs(dy))<12)return;
+      if(Math.abs(dx)>Math.abs(dy)*1.5)gesture.axis='x';
+      else{gesture=null;return}
+    }
+    const outward=gesture.view==='home'?dx<0:dx>0;
+    // Desk's later pages keep their own right-swipe navigation.
+    const pager=document.getElementById('dk-osw');
+    if(gesture.view==='desk'&&pager&&(pager._pg||pager.scrollLeft>1)){gesture=null;return}
+    if(outward&&e.cancelable)e.preventDefault();
+  },{passive:false,capture:true});
+  host.addEventListener('touchend',e=>{
+    const g=gesture;gesture=null;
+    if(!g||g.axis!=='x'||blocked()||e.touches.length)return;
+    const t=Array.from(e.changedTouches).find(t=>t.identifier===g.id);if(!t)return;
+    const dx=t.clientX-g.x,dy=t.clientY-g.y;
+    if(Math.abs(dx)<60||Math.abs(dx)<=Math.abs(dy)*1.5)return;
+    if((g.view==='home'&&dx<0)||(g.view==='desk'&&dx>0)){
+      suppressClickUntil=performance.now()+350;view(g.view==='home'?'desk':'home');
+    }
+  },{passive:true});
+  host.addEventListener('touchcancel',()=>{gesture=null},{passive:true});
+  host.addEventListener('click',e=>{if(performance.now()<suppressClickUntil){e.preventDefault();e.stopPropagation()}},true);
   function tick(){
     const now=new Date(),date=iso(now),hour=now.getHours(),night=hour<6||hour>=18;
     home.dataset.phase=night?'night':'day';
